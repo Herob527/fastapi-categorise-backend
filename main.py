@@ -15,6 +15,6 @@ app.include_router(r_texts.router)
 app.include_router(r_audios.router)
 
 
-@app.route("/")
+@app.get("/")
 def root():
-    return "Hejo"
+    return {"Hejo": "hejo"}
