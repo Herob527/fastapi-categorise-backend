@@ -29,5 +29,5 @@ async def post_new_audio():
 
 @router.delete("/{audio_id}")
 async def remove_audio(audio_id: int):
-    print("Removed audio with ID: {id}")
+    print(f"Removed audio with ID: {audio_id}")
     return {"test": audio_id}

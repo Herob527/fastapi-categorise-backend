@@ -29,7 +29,7 @@ async def post_new_category():
 
 @router.patch("/{category_id}")
 async def update_category(category_id: int):
-    print("Updated category with name: {category_id}")
+    print(f"Updated category with name: {category_id}")
     return {"test": category_id}
 
 
