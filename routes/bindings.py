@@ -22,21 +22,17 @@ def get_binding(binding_id: int):
     return {"hejo": binding_id}
 
 
-class PostRequest(BaseModel):
-    category: str
-    text: str
-
-
-class Category(BaseModel):
-    name: str
-
-
 @router.post("")
 def create_binding(
     audio: Annotated[UploadFile, Form()],
     category: str = Form(),
     text: str = Form(),
 ):
+    audio_name = audio.filename
+    if not audio_name:
+        return {"Test": "Error"}
+    with open(audio_name, "wb") as audio_output:
+        audio_output.write(audio.file.read())
     return {"Test": category}
 
 
