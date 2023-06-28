@@ -1,4 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Form
+from sqlalchemy.orm import Session
+
+from database_handle.database import get_db
 
 __all__ = ["router"]
 
@@ -22,7 +25,8 @@ async def get_all_texts():
 
 
 @router.post("/")
-async def post_new_text():
+async def post_new_text(text: str = Form(), db: Session = Depends(get_db)):
+    print("text")
     print("Created new text")
     return {"test": "test"}
 
