@@ -1,11 +1,12 @@
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import Column, ForeignKey, Integer, Uuid
+from sqlalchemy.sql.sqltypes import UUID
 from ..database import Base
 
 
 class Bindings(Base):
     __tablename__ = "bindings"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid, primary_key=True, index=True)
     category_id = Column(
         Integer,
         ForeignKey("categories.id"),
