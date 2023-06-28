@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Form
 
 __all__ = ["router"]
 
@@ -22,7 +22,7 @@ async def get_all_categories():
 
 
 @router.post("/")
-async def post_new_category():
+async def post_new_category(category: str = Form()):
     print("Created new category")
     return {"test": "test"}
 
