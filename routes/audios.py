@@ -53,7 +53,6 @@ async def post_new_audio(id: UUID4, file: UploadFile, db: Session = Depends(get_
     try:
         create_audio(db=db, audio=params)
     except Exception as e:
-        db.rollback()
         raise HTTPException(status_code=400, detail=f"File {file.filename} exists")
     return {
         "test": f"duration: {duration} seconds and amount of channels is equal to {channels} "

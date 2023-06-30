@@ -35,7 +35,6 @@ async def post_new_category(
     try:
         create_category(db=db, category=new_category)
     except Exception as e:
-        db.rollback()
         raise HTTPException(
             status_code=400, detail=f"Category {category} already exists"
         )
