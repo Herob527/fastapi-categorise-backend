@@ -8,9 +8,9 @@ class Bindings(Base):
 
     id = Column(Uuid, primary_key=True, index=True)
     category_id = Column(
-        Integer,
+        Uuid,
         ForeignKey("categories.id"),
         nullable=False,
     )
-    audio_id = Column(Integer, ForeignKey("audios.id"), nullable=False)
-    text_id = Column(Integer, ForeignKey("texts.id"), nullable=False)
+    audio_id = Column(Uuid, ForeignKey("audios.id"), nullable=False)
+    text_id = Column(Uuid, ForeignKey("texts.id"), nullable=False)
