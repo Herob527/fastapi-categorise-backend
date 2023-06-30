@@ -29,7 +29,7 @@ async def get_all_categories():
 
 @router.post("/")
 async def post_new_category(
-    id: UUID4, category: str = Form(), db: Session = Depends(get_db)
+    id: UUID4 = Form(), category: str = Form(), db: Session = Depends(get_db)
 ):
     new_category = Categories(id=id, name=category)
     try:
