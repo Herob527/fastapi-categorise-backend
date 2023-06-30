@@ -45,7 +45,7 @@ async def create_binding(
         id=binding_id, category_id=binding_id, audio_id=binding_id, text_id=binding_id
     )
     try:
-        done, cancel, result = await asyncio.gather(
+        await asyncio.gather(
             post_new_audio(id=binding_id, file=audio, db=db),
             post_new_category(id=binding_id, category=category, db=db),
             post_new_text(id=binding_id, text=text, db=db),
