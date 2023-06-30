@@ -14,9 +14,6 @@ def get_all_audios(db: Session):
 
 def create_audio(db: Session, audio: Audios):
     db.add(audio)
-    db.commit()
-    db.refresh(audio)
-    return audio
 
 
 def remove_audio(db: Session, id: str):

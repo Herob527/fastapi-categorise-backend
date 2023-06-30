@@ -23,5 +23,3 @@ def remove_text(db: Session, id: str):
 
 def create_text(db: Session, text: Texts):
     db.add(text)
-    db.commit()
-    db.refresh(text)

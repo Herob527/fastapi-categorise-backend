@@ -18,8 +18,6 @@ def remove_category(db: Session, id: str):
 
 def create_category(db: Session, category: Categories):
     db.add(category)
-    db.commit()
-    db.refresh(category)
 
 
 def update_category(db: Session, category: Categories):

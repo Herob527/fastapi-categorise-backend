@@ -21,9 +21,6 @@ def get_total_bindings(db: Session):
 
 def create_binding(db: Session, binding: Bindings):
     db.add(binding)
-    db.commit()
-    db.refresh(binding)
-    return binding
 
 
 def remove_binding(db: Session, id: str):
