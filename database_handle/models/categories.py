@@ -7,4 +7,4 @@ class Categories(Base):
     __tablename__ = "categories"
 
     id = Column(Uuid, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
