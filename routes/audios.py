@@ -44,9 +44,17 @@ async def post_new_audio(id: UUID4, file: UploadFile, db: Session = Depends(get_
     duration = round(librosa.get_duration(y=y_stereo, sr=sr), 2)
     channels = len(y_stereo)
     params = Audios(
-        id=id, audio_length=duration, channels=channels, url="test", frequency=int(sr)
+        id=id,
+        audio_length=duration,
+        channels=channels,
+        url=file.filename,
+        frequency=int(sr),
     )
-    create_audio(db=db, audio=params)
+    try:
+        create_audio(db=db, audio=params)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"File {file.filename} exists")
     return {
         "test": f"duration: {duration} seconds and amount of channels is equal to {channels} "
     }

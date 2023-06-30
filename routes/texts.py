@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, Form
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
+from database_handle.models.texts import Texts
+from database_handle.queries.texts import create_text
 
 __all__ = ["router"]
 
@@ -25,9 +28,9 @@ async def get_all_texts():
 
 
 @router.post("/")
-async def post_new_text(text: str = Form(), db: Session = Depends(get_db)):
-    print("text")
-    print("Created new text")
+async def post_new_text(id: UUID4, text: str = Form(), db: Session = Depends(get_db)):
+    new_text = Texts(id=id, text=text)
+    create_text(db=db, text=new_text)
     return {"test": "test"}
 
 

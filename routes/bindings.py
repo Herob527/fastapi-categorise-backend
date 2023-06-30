@@ -4,8 +4,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from database_handle.database import get_db
-from database_handle.queries.bindings import get_one_binding
-
+from database_handle.models.bindings import Bindings
+from database_handle.queries.bindings import (
+    get_one_binding,
+    create_binding as create_new_binding,
+)
+import asyncio
 from routes.audios import post_new_audio
 from routes.categories import post_new_category
 from routes.texts import post_new_text
@@ -37,10 +41,20 @@ async def create_binding(
     db: Session = Depends(get_db),
 ):
     binding_id = uuid4()
-    print(binding_id)
-    await post_new_audio(id=binding_id, file=audio, db=db)
-    await post_new_text(text=text, db=db)
-    await post_new_category(category)
+    new_binding = Bindings(
+        id=binding_id, category_id=binding_id, audio_id=binding_id, text_id=binding_id
+    )
+    try:
+        done, cancel, result = await asyncio.gather(
+            post_new_audio(id=binding_id, file=audio, db=db),
+            post_new_category(id=binding_id, category=category, db=db),
+            post_new_text(id=binding_id, text=text, db=db),
+        )
+    except Exception as e:
+        db.rollback()
+        return
+    create_new_binding(db=db, binding=new_binding)
+    db.commit()
     return {"Test": category}
 
 

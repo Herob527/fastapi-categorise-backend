@@ -1,4 +1,10 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Depends, Form, HTTPException
+from pydantic import UUID4
+from sqlalchemy.orm import Session
+
+from database_handle.database import get_db
+from database_handle.models.categories import Categories
+from database_handle.queries.categories import create_category
 
 __all__ = ["router"]
 
@@ -22,8 +28,17 @@ async def get_all_categories():
 
 
 @router.post("/")
-async def post_new_category(category: str = Form()):
-    print("Created new category")
+async def post_new_category(
+    id: UUID4, category: str = Form(), db: Session = Depends(get_db)
+):
+    new_category = Categories(id=id, name=category)
+    try:
+        create_category(db=db, category=new_category)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400, detail=f"Category {category} already exists"
+        )
     return {"test": "test"}
 
 
