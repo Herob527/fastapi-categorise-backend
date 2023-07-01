@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from typing import Annotated
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from database_handle.database import get_db
@@ -43,7 +42,7 @@ async def create_binding(
 ):
     binding_id = uuid4()
     category_exist = get_one_category(db=db, name=category)
-    category_id = category_exist.id if category_exist is not None else binding_id
+    category_id = binding_id if category_exist is None else category_exist.id
     new_binding = Bindings(
         id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
     )
@@ -59,7 +58,7 @@ async def create_binding(
         create_new_binding(db=db, binding=new_binding)
     except Exception as e:
         db.rollback()
-        return
+        raise HTTPException(status_code=400, detail=str(e))
     db.commit()
     return {"Test": category}
 
