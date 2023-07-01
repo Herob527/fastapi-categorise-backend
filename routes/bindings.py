@@ -50,10 +50,11 @@ async def create_binding(
             post_new_category(id=binding_id, category=category, db=db),
             post_new_text(id=binding_id, text=text, db=db),
         )
+
+        create_new_binding(db=db, binding=new_binding)
     except Exception as e:
         db.rollback()
         return
-    create_new_binding(db=db, binding=new_binding)
     db.commit()
     return {"Test": category}
 
