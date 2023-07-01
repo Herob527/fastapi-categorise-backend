@@ -1,10 +1,12 @@
+from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
 from database_handle.models.categories import Categories
 
 
-def get_one_category(db: Session, id: str):
-    return db.query(Categories).filter(Categories.id == id).first()
+def get_one_category(db: Session, name: Column[str]):
+    res = db.query(Categories).filter(Categories.name == name).first()
+    return res
 
 
 def get_all_categories(db: Session):
@@ -17,6 +19,9 @@ def remove_category(db: Session, id: str):
 
 
 def create_category(db: Session, category: Categories):
+    category_exists = get_one_category(db, name=category.name)
+    if category_exists:
+        return
     db.add(category)
 
 
