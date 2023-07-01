@@ -10,6 +10,7 @@ from database_handle.queries.bindings import (
     create_binding as create_new_binding,
 )
 import asyncio
+from database_handle.queries.categories import get_one_category
 from routes.audios import post_new_audio
 from routes.categories import post_new_category
 from routes.texts import post_new_text
@@ -41,14 +42,18 @@ async def create_binding(
     db: Session = Depends(get_db),
 ):
     binding_id = uuid4()
+    category_exist = get_one_category(db=db, name=category)
+    category_id = category_exist.id if category_exist is not None else binding_id
     new_binding = Bindings(
-        id=binding_id, category_id=binding_id, audio_id=binding_id, text_id=binding_id
+        id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
     )
     try:
         await asyncio.gather(
-            post_new_audio(id=binding_id, file=audio, db=db),
-            post_new_category(id=binding_id, category=category, db=db),
-            post_new_text(id=binding_id, text=text, db=db),
+            *[
+                post_new_audio(id=binding_id, file=audio, db=db),
+                post_new_category(id=category_id, category=category, db=db),
+                post_new_text(id=binding_id, text=text, db=db),
+            ]
         )
 
         create_new_binding(db=db, binding=new_binding)
