@@ -1,9 +1,9 @@
-from typing import Annotated
+from uuid import uuid4
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 import librosa
 from io import BytesIO
 from pydantic import UUID4
-
+from pathlib import Path
 from sqlalchemy.orm import Session
 from database_handle.database import get_db
 from database_handle.models.audios import Audios
@@ -36,24 +36,37 @@ async def get_all_audios():
 
 
 @router.post("", responses={400: {"description": "Invalid file"}})
-async def post_new_audio(id: UUID4, file: UploadFile, db: Session = Depends(get_db)):
+async def post_new_audio(
+    id: UUID4 = Form(), file: UploadFile = Form(), db: Session = Depends(get_db)
+):
+    output_dir = Path("audios")
+    file_data = file.file.read()
     try:
-        y_stereo, sr = librosa.load(BytesIO(file.file.read()), sr=None, mono=False)
+        y_stereo, sr = librosa.load(BytesIO(file_data), sr=None, mono=False)
     except:
         raise HTTPException(status_code=400, detail="Invalid file")
+
+    output_dir.mkdir(exist_ok=True)
+
     duration = round(librosa.get_duration(y=y_stereo, sr=sr), 2)
     channels = len(y_stereo)
+    filename_path = Path(file.filename or "")
+    url = Path(output_dir, f"{uuid4()}{filename_path.suffix}")
+
     params = Audios(
         id=id,
         audio_length=duration,
         channels=channels,
-        url=file.filename,
+        file_name=file.filename,
+        url=str(url),
         frequency=int(sr),
     )
-    try:
-        create_audio(db=db, audio=params)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"File {file.filename} exists")
+
+    create_audio(db=db, audio=params)
+
+    with url.open("bw") as audio_output:
+        audio_output.write(file_data)
+
     return {
         "test": f"duration: {duration} seconds and amount of channels is equal to {channels} "
     }
