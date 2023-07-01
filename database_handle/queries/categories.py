@@ -5,8 +5,7 @@ from database_handle.models.categories import Categories
 
 
 def get_one_category(db: Session, name: Column[str]):
-    res = db.query(Categories).filter(Categories.name == name).first()
-    return res
+    return db.query(Categories).filter(Categories.name == name).first()
 
 
 def get_all_categories(db: Session):
