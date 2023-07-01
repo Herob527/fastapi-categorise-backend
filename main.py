@@ -1,6 +1,6 @@
 from fastapi.responses import RedirectResponse
-from database_handle.database import SessionLocal, engine
-from fastapi import FastAPI, Request, Response
+from database_handle.database import engine
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database_handle.models import texts, audios, categories, bindings
 from routes import (

@@ -1,4 +1,4 @@
-from sqlalchemy import UUID, Column, Integer, String, Uuid
+from sqlalchemy import Column, String, Uuid
 from ..database import Base
 
 

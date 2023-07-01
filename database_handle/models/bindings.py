@@ -1,5 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Uuid
-from sqlalchemy.sql.sqltypes import UUID
+from sqlalchemy import Column, ForeignKey, Uuid
 from ..database import Base
 
 

@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 
 from database_handle.models.audios import Audios
-from pprint import pprint
 
 
 def get_one_audio(db: Session, id: str):

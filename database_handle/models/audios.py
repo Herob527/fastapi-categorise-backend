@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Float, Integer, String, Uuid
-from sqlalchemy.sql.sqltypes import UUID
 from ..database import Base
 
 
