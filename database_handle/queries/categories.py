@@ -14,6 +14,10 @@ def get_one_category(db: Session, name: Column[str] | str) -> GetOneCategory | N
     return db.query(Categories).filter(Categories.name == name).first()
 
 
+def get_categories_count(db: Session):
+    return db.query(Categories).count()
+
+
 def get_all_categories(db: Session):
     return db.query(Categories).all()
 
