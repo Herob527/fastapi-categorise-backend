@@ -10,7 +10,7 @@ class GetOneCategory(BaseModel):
     name: str
 
 
-def get_one_category(db: Session, name: Column[str] | str) -> GetOneCategory:
+def get_one_category(db: Session, name: Column[str] | str) -> GetOneCategory | None:
     return db.query(Categories).filter(Categories.name == name).first()
 
 
