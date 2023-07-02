@@ -22,8 +22,10 @@ def get_all_categories(db: Session):
     return db.query(Categories).all()
 
 
-def remove_category(db: Session, id: str):
-    db.query(Categories).filter(Categories.id == id).delete(synchronize_session=False)
+def remove_category(db: Session, name: str):
+    db.query(Categories).filter(Categories.name == name).delete(
+        synchronize_session=False
+    )
     db.commit()
 
 
