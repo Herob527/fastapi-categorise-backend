@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from database_handle.database import get_db
 from database_handle.models.audios import Audios
-from database_handle.queries.audios import create_audio
+from database_handle.queries.audios import create_audio, audio_exists
 
 
 class NotAnAudio(Exception):
@@ -61,7 +61,8 @@ async def post_new_audio(
         url=str(url),
         frequency=int(sr),
     )
-
+    if audio_exists(db, params):
+        raise HTTPException(status_code=400, detail="File already exists")
     create_audio(db=db, audio=params)
 
     with url.open("bw") as audio_output:

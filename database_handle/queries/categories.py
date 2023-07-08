@@ -34,6 +34,7 @@ def create_category(db: Session, category: Categories):
     if category_exists:
         return
     db.add(category)
+    db.commit()
 
 
 def update_category(db: Session, category: Categories):

@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
+from database_handle.models.audios import Audios
 
 from database_handle.models.bindings import Bindings
+from database_handle.models.categories import Categories
+from database_handle.models.texts import Texts
 
 
 def get_one_binding(db: Session, id: str):
@@ -8,7 +11,14 @@ def get_one_binding(db: Session, id: str):
 
 
 def get_all_bindings(db: Session):
-    return db.query(Bindings).all()
+    query = (
+        db.query(Bindings, Categories, Audios, Texts)
+        .join(Categories)
+        .join(Audios)
+        .join(Texts)
+    )
+    mapped = map(lambda x: x._asdict(), query.all())
+    return list(mapped)
 
 
 def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):

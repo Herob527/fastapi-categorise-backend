@@ -46,7 +46,8 @@ def get_paginated_bindings(
 
 @router.get("/all")
 def get_all_bindings(db: Session = Depends(get_db)):
-    return all_bindings_query(db)
+    query_data = all_bindings_query(db)
+    return query_data
 
 
 @router.get("/{binding_id}")
@@ -57,8 +58,7 @@ def get_binding(binding_id: str, db: Session = Depends(get_db)):
 @router.post("")
 async def create_binding(
     audio: Annotated[UploadFile, File()],
-    category: str = Form(),
-    text: str = Form(),
+    category: str = Form(default="unknown"),
     db: Session = Depends(get_db),
 ):
     binding_id = uuid4()
@@ -72,7 +72,7 @@ async def create_binding(
         await asyncio.gather(
             *[
                 post_new_audio(id=binding_id, file=audio, db=db),
-                post_new_text(id=binding_id, text=text, db=db),
+                post_new_text(id=binding_id, text="", db=db),
             ]
         )
 
