@@ -17,8 +17,7 @@ def get_all_bindings(db: Session):
         .join(Audios)
         .join(Texts)
     )
-    mapped = map(lambda x: x._asdict(), query.all())
-    return list(mapped)
+    return query.all()
 
 
 def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):

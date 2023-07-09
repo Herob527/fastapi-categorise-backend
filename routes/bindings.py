@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from typing import Annotated
+from typing import Annotated, List
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from database_handle.database import get_db
@@ -21,6 +21,13 @@ from database_handle.queries.categories import (
 )
 from routes.audios import post_new_audio
 from routes.categories import post_new_category
+from routes.schemas.main import (
+    AudiosModel,
+    BindingsModel,
+    CategoriesModel,
+    BindingsResponse,
+    TextsModel,
+)
 from routes.texts import post_new_text
 
 __all__ = ["router"]
@@ -44,10 +51,33 @@ def get_paginated_bindings(
     return paginated_bindings_query(page=page, limit=per_page, db=db)
 
 
-@router.get("/all")
+@router.get("/all", response_model=list[BindingsResponse])
 def get_all_bindings(db: Session = Depends(get_db)):
     query_data = all_bindings_query(db)
-    return query_data
+    res: list[BindingsResponse] = []
+    for item in query_data:
+        bindings = BindingsModel(
+            id=item.Bindings.id,
+            text_id=item.Bindings.text_id,
+            category_id=item.Bindings.category_id,
+            audio_id=item.Bindings.audio_id,
+        )
+        categories = CategoriesModel(id=item.Categories.id, name=item.Categories.name)
+        audios = AudiosModel(
+            channels=item.Audios.channels,
+            id=item.Audios.id,
+            audio_length=item.Audios.audio_length,
+            file_name=item.Audios.file_name,
+            frequency=item.Audios.frequency,
+            url=item.Audios.url,
+        )
+        texts = TextsModel(text=item.Texts.text, id=item.Texts.id)
+        response = BindingsResponse(
+            Bindings=bindings, Categories=categories, Audios=audios, Texts=texts
+        )
+        res.append(response)
+    return res
+    return res
 
 
 @router.get("/{binding_id}")
