@@ -38,7 +38,7 @@ async def post_new_category(
     new_category = Categories(id=id, name=category)
     try:
         create_category(db=db, category=new_category)
-    except Exception as e:
+    except Exception:
         pass
     db.commit()
 
