@@ -35,12 +35,12 @@ async def post_new_text(id: UUID4, text: str = Form(), db: Session = Depends(get
 
 
 @router.patch("/{text_id}")
-async def update_text(text_id: int):
+async def update_text(text_id: UUID4, new_text: str = Form()):
     print("Updated text with name: {text_id}")
     return {"test": text_id}
 
 
 @router.delete("/{text_id}")
-async def remove_text(text_id: int):
+async def remove_text(text_id: UUID4):
     print(f"Removed text with ID: {text_id}")
     return {"test": text_id}

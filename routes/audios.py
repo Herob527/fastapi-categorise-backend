@@ -24,7 +24,7 @@ router = APIRouter(
 
 
 @router.get("{audio_id}")
-async def get_audio(audio_id: int):
+async def get_audio(audio_id: UUID4):
     print(f"Got audio with ID: {audio_id}")
     return {"test": audio_id}
 
@@ -74,6 +74,6 @@ async def post_new_audio(
 
 
 @router.delete("{audio_id}")
-async def remove_audio(audio_id: int):
+async def remove_audio(audio_id: UUID4):
     print(f"Removed audio with ID: {audio_id}")
     return {"test": audio_id}
