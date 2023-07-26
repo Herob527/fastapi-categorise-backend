@@ -10,13 +10,15 @@ def get_one_binding(db: Session, id: str):
     return db.query(Bindings).filter(Bindings.id == id).first()
 
 
-def get_all_bindings(db: Session):
+def get_all_bindings(db: Session, category_name: str | None = None):
     query = (
         db.query(Bindings, Categories, Audios, Texts)
         .join(Categories)
         .join(Audios)
         .join(Texts)
     )
+    if category_name:
+        query = query.where(Categories.name == category_name)
     return query.all()
 
 
