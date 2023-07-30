@@ -1,11 +1,10 @@
-from uuid import uuid4
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from database_handle.database import SessionLocal, engine, get_db
+from database_handle.database import engine, get_db
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database_handle.models import texts, audios, categories, bindings
-from database_handle.queries.categories import create_category, get_categories_count
 from routes import (
     categories as r_categories,
     texts as r_texts,
@@ -19,7 +18,6 @@ categories.Base.metadata.create_all(engine)
 bindings.Base.metadata.create_all(engine)
 origins = "https?://localhost:.+"
 
-
 app = FastAPI()
 # Dependency
 app.add_middleware(
@@ -30,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+app.mount("/", StaticFiles(directory="audios"), name="static")
 app.include_router(r_categories.router)
 app.include_router(r_texts.router)
 app.include_router(r_audios.router)
