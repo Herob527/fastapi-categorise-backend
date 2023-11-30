@@ -18,6 +18,7 @@ categories.Base.metadata.create_all(engine)
 bindings.Base.metadata.create_all(engine)
 origins = "https?://localhost:.+"
 
+
 app = FastAPI()
 # Dependency
 app.add_middleware(
@@ -28,7 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory="audios"), name="static")
+app.mount("/static", StaticFiles(directory="audios"), name="static")
 app.include_router(r_categories.router)
 app.include_router(r_texts.router)
 app.include_router(r_audios.router)
@@ -36,10 +37,13 @@ app.include_router(r_bindings.router)
 
 
 @app.get("/")
-def root():
+async def root():
     return RedirectResponse("http://localhost:8000/docs")
 
 
 @app.get("/commit")
 def commit(db: Session = Depends(get_db)):
     db.commit()
+
+
+print("Listeining")
