@@ -1,17 +1,19 @@
-FROM python:latest
+FROM python:3.11.6-bookworm
 
 WORKDIR /app
+
+COPY . /app
 
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-RUN python -c 'from urllib.request import urlopen; print(urlopen("https://install.python-poetry.org").read().decode())' | python -
+RUN pip install poetry
 
 COPY . /app
 
 RUN poetry install
 
-EXPOSE 5000
+EXPOSE 8000
 
-RUN poetry run python main.py
+CMD ["poetry", "run", "uvicorn", "main:app"]
