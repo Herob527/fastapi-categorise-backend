@@ -11,6 +11,7 @@ from database_handle.queries.bindings import (
     get_total_bindings,
     get_paginated_bindings as paginated_bindings_query,
     get_all_bindings as all_bindings_query,
+    remove_binding as binding_remove,
 )
 import asyncio
 from database_handle.queries.categories import (
@@ -112,6 +113,6 @@ async def create_binding(
 
 
 @router.delete("/{binding_id}")
-def remove_binding(binding_id: int):
-    print(f"Removed binding with id {binding_id}")
+def remove_binding(binding_id: int, db: Session = Depends(get_db)):
+    binding_remove(db, binding_id)
     return {"hejo": binding_id}
