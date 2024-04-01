@@ -1,16 +1,10 @@
-from pydantic import UUID4, BaseModel
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
 from database_handle.models.categories import Categories
 
 
-class GetOneCategory(BaseModel):
-    id: UUID4
-    name: str
-
-
-def get_one_category(db: Session, name: Column[str] | str) -> GetOneCategory | None:
+def get_one_category(db: Session, name: Column[str] | str) -> Categories | None:
     return db.query(Categories).filter(Categories.name == name).first()
 
 
