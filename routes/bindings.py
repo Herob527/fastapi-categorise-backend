@@ -96,16 +96,12 @@ async def create_binding(
     )
     new_category = Categories(id=id, name=category)
     try:
-        await asyncio.gather(
-            *[
-                post_new_audio(id=binding_id, file=audio, db=db),
-                post_new_text(id=binding_id, text="", db=db),
-            ]
-        )
 
+        await post_new_audio(id=binding_id, file=audio, db=db)
+        await post_new_text(id=binding_id, text="", db=db)
         create_new_binding(db=db, binding=new_binding)
         create_category(db=db, category=new_category)
-    except Exception as e:
+    except HTTPException as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     db.commit()
