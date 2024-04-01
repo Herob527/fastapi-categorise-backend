@@ -34,6 +34,6 @@ def create_binding(db: Session, binding: Bindings):
     db.add(binding)
 
 
-def remove_binding(db: Session, id: str):
+def remove_binding(db: Session, id: int):
     db.query(Bindings).filter(Bindings.id == id).delete()
     db.commit()
