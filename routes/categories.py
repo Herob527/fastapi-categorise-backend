@@ -9,6 +9,7 @@ from database_handle.queries.categories import (
     get_all_categories as all_categories_query,
     get_one_category,
     remove_category as category_delete,
+    update_category as category_update,
 )
 
 __all__ = ["router"]
@@ -46,8 +47,14 @@ async def post_new_category(
 
 
 @router.patch("/{category_name}")
-async def update_category(category_name: str, new_category_name: str = Form()):
-    pass
+async def update_category(
+    category_name: str, new_category_name: str = Form(), db: Session = Depends(get_db)
+):
+    category = get_one_category(db, category_name)
+    if category is None:
+        return {"res": "Not found"}
+    new_category = Categories(id=category.id, category=new_category_name)
+    category_update(db, new_category)
 
 
 @router.delete("/{category_name}")
