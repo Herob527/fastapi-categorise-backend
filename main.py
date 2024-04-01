@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database_handle.database import engine, get_db
@@ -18,6 +19,8 @@ categories.Base.metadata.create_all(engine)
 bindings.Base.metadata.create_all(engine)
 origins = "https?://localhost:.+"
 
+static_path = Path("audios")
+static_path.mkdir(exist_ok=True)
 
 app = FastAPI()
 # Dependency
@@ -29,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="audios"), name="static")
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 app.include_router(r_categories.router)
 app.include_router(r_texts.router)
 app.include_router(r_audios.router)
