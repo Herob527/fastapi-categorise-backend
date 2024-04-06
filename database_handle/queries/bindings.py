@@ -1,3 +1,4 @@
+from pydantic.types import UUID4
 from sqlalchemy.orm import Session
 from database_handle.models.audios import Audios
 
@@ -34,6 +35,6 @@ def create_binding(db: Session, binding: Bindings):
     db.add(binding)
 
 
-def remove_binding(db: Session, id: int):
+def remove_binding(db: Session, id: UUID4):
     db.query(Bindings).filter(Bindings.id == id).delete()
     db.commit()
