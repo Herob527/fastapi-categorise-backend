@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from typing import Annotated
+from pydantic.types import UUID4
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from database_handle.database import get_db
@@ -71,7 +72,7 @@ def get_all_bindings(db: Session = Depends(get_db), category: str | None = None)
         )
         texts = TextsModel(text=item.Texts.text, id=item.Texts.id)
         response = BindingsResponse(
-            Bindings=bindings, Categories=categories, Audios=audios, Texts=texts
+            bindings=bindings, categories=categories, audios=audios, texts=texts
         )
         res.append(response)
     return res
@@ -97,18 +98,18 @@ async def create_binding(
     new_category = Categories(id=id, name=category)
     try:
 
-        await post_new_audio(id=binding_id, file=audio, db=db)
-        await post_new_text(id=binding_id, text="", db=db)
+        await post_new_audio(id=binding_id, file=audio, db=db, commit=False)
+        await post_new_text(id=binding_id, text="", db=db, commit=False)
         create_new_binding(db=db, binding=new_binding)
         create_category(db=db, category=new_category)
+        db.commit()
     except HTTPException as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    db.commit()
     return {"Test": category}
 
 
 @router.delete("/{binding_id}")
-def remove_binding(binding_id: int, db: Session = Depends(get_db)):
+def remove_binding(binding_id: UUID4, db: Session = Depends(get_db)):
     binding_remove(db, binding_id)
     return {"hejo": binding_id}
