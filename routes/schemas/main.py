@@ -28,7 +28,7 @@ class TextsModel(BaseModel):
 
 
 class BindingsResponse(BaseModel):
-    Bindings: BindingsModel
-    Categories: CategoriesModel
-    Audios: AudiosModel
-    Texts: TextsModel
+    bindings: BindingsModel
+    categories: CategoriesModel
+    audios: AudiosModel
+    texts: TextsModel
