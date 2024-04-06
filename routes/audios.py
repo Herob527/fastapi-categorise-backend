@@ -37,7 +37,10 @@ async def get_all_audios():
 
 @router.post("", responses={400: {"description": "Invalid file"}})
 async def post_new_audio(
-    id: UUID4 = Form(), file: UploadFile = Form(), db: Session = Depends(get_db)
+    id: UUID4 = Form(),
+    file: UploadFile = Form(),
+    db: Session = Depends(get_db),
+    commit=True,
 ):
     output_dir = Path("audios")
     file_data = file.file.read()
@@ -67,6 +70,9 @@ async def post_new_audio(
 
     with url.open("bw") as audio_output:
         audio_output.write(file_data)
+
+    if commit:
+        db.commit()
 
     return {
         "test": f"duration: {duration} seconds and amount of channels is equal to {channels} "

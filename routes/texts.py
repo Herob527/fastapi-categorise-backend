@@ -28,9 +28,13 @@ async def get_all_texts():
 
 
 @router.post("/")
-async def post_new_text(id: UUID4, text: str = Form(), db: Session = Depends(get_db)):
+async def post_new_text(
+    id: UUID4, text: str = Form(), db: Session = Depends(get_db), commit=True
+):
     new_text = Texts(id=id, text=text)
     create_text(db=db, text=new_text)
+    if commit:
+        db.commit()
     return {"test": "test"}
 
 
