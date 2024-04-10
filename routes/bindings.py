@@ -91,11 +91,11 @@ async def create_binding(
 ):
     binding_id = uuid4()
     category_exist = get_one_category(db=db, name=category)
-    category_id = binding_id if category_exist is None else category_exist.id
+    category_id = uuid4() if category_exist is None else category_exist.id
     new_binding = Bindings(
         id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
     )
-    new_category = Categories(id=id, name=category)
+    new_category = Categories(id=category_id, name=category)
     try:
 
         await post_new_audio(id=binding_id, file=audio, db=db, commit=False)
