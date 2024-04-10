@@ -44,6 +44,7 @@ async def post_new_audio(
 ):
     output_dir = Path("audios")
     file_data = file.file.read()
+    # TODO: Handle not-audio files
     try:
         y_stereo, sr = librosa.load(BytesIO(file_data), sr=None, mono=False)
     except:
