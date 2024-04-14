@@ -48,6 +48,7 @@ async def post_new_audio(
     try:
         y_stereo, sr = librosa.load(BytesIO(file_data), sr=None, mono=False)
     except:
+        print("[post_new_audio - 'invalid-file']", "invalid-file")
         raise HTTPException(status_code=400, detail="Invalid file")
 
     output_dir.mkdir(exist_ok=True)
@@ -65,8 +66,6 @@ async def post_new_audio(
         url=str(url),
         frequency=int(sr),
     )
-    if audio_exists(db, params):
-        raise HTTPException(status_code=400, detail="File already exists")
     create_audio(db=db, audio=params)
 
     with url.open("bw") as audio_output:
