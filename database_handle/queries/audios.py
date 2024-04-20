@@ -1,3 +1,4 @@
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.models.audios import Audio
@@ -17,8 +18,8 @@ def audio_exists(db: Session, audio: Audio):
     )
 
 
-def get_one_audio(db: Session, id: str):
-    return db.query(Audio).filter(Audio.id == id).first()
+def get_one_audio(db: Session, id: UUID4):
+    return db.query(Audio).filter(Audio.id == id).limit(1).first()
 
 
 def get_all_audios(db: Session):
