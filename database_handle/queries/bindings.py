@@ -20,19 +20,16 @@ def get_one_binding(db: Session, id: str):
 
 def get_all_bindings(db: Session, category_name: str | None = None):
 
-    # Construct the select statement
-    stmt = select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+    stmt = (
+        select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+        .join(CategoryAlias)
+        .join(AudioAlias)
+        .join(TextAlias)
+    )
 
-    # Join the tables
-    stmt = stmt.join(CategoryAlias)
-    stmt = stmt.join(AudioAlias)
-    stmt = stmt.join(TextAlias)
-
-    # Optionally filter by category name
     if category_name:
         stmt = stmt.where(CategoryAlias.name == category_name)
 
-    # Execute the statement and fetch all results
     result = db.execute(stmt).fetchall()
 
     return result
@@ -40,17 +37,15 @@ def get_all_bindings(db: Session, category_name: str | None = None):
 
 def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):
     # Construct the select statement
-    stmt = select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+    stmt = (
+        select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+        .join(CategoryAlias)
+        .join(AudioAlias)
+        .join(TextAlias)
+    )
 
-    # Join the tables
-    stmt = stmt.join(CategoryAlias)
-    stmt = stmt.join(AudioAlias)
-    stmt = stmt.join(TextAlias)
-
-    # Apply pagination
     stmt = stmt.limit(limit).offset(page * limit)
 
-    # Execute the statement and fetch all results
     result = db.execute(stmt).fetchall()
 
     return result
