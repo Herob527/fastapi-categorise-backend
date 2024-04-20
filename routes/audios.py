@@ -1,5 +1,6 @@
 from uuid import uuid4
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 import librosa
 from io import BytesIO
 from pydantic import UUID4
@@ -7,7 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
-from database_handle.queries.audios import create_audio, audio_exists
+from database_handle.queries.audios import create_audio, get_one_audio
 
 
 class NotAnAudio(Exception):
@@ -23,19 +24,29 @@ router = APIRouter(
 )
 
 
-@router.get("{audio_id}")
+@router.get("/{audio_id}")
 async def get_audio(audio_id: UUID4):
     print(f"Got audio with ID: {audio_id}")
     return {"test": audio_id}
 
 
-@router.get("")
+@router.get("/{audio_id}/file")
+async def get_audio_file(audio_id: UUID4, db: Session = Depends(get_db)):
+    result = get_one_audio(db, audio_id)
+    if result is None:
+        return {"error": "Audio not found"}
+    url = str(result.url)
+    # Assuming the URL is a path to the file on the filesystem
+    return FileResponse(url, filename=str(result.file_name))
+
+
+@router.get("/")
 async def get_all_audios():
     print("Printed all audios")
     return {"test": "test"}
 
 
-@router.post("", responses={400: {"description": "Invalid file"}})
+@router.post("/", responses={400: {"description": "Invalid file"}})
 async def post_new_audio(
     id: UUID4 = Form(),
     file: UploadFile = Form(),
@@ -79,7 +90,7 @@ async def post_new_audio(
     }
 
 
-@router.delete("{audio_id}")
+@router.delete("/{audio_id}")
 async def remove_audio(audio_id: UUID4):
     print(f"Removed audio with ID: {audio_id}")
     return {"test": audio_id}
