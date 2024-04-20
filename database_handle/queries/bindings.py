@@ -1,10 +1,17 @@
 from pydantic.types import UUID4
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, aliased
 from database_handle.models.audios import Audio
 
 from database_handle.models.bindings import Binding
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
+
+# Create aliases for the tables
+BindingAlias = aliased(Binding, name="binding")
+CategoryAlias = aliased(Category, name="category")
+AudioAlias = aliased(Audio, name="audio")
+TextAlias = aliased(Text, name="text")
 
 
 def get_one_binding(db: Session, id: str):
@@ -12,16 +19,41 @@ def get_one_binding(db: Session, id: str):
 
 
 def get_all_bindings(db: Session, category_name: str | None = None):
-    query = (
-        db.query(Binding, Category, Audio, Text).join(Category).join(Audio).join(Text)
-    )
+
+    # Construct the select statement
+    stmt = select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+
+    # Join the tables
+    stmt = stmt.join(CategoryAlias)
+    stmt = stmt.join(AudioAlias)
+    stmt = stmt.join(TextAlias)
+
+    # Optionally filter by category name
     if category_name:
-        query = query.where(Category.name == category_name)
-    return query.all()
+        stmt = stmt.where(CategoryAlias.name == category_name)
+
+    # Execute the statement and fetch all results
+    result = db.execute(stmt).fetchall()
+
+    return result
 
 
 def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):
-    return db.query(Binding).limit(limit).offset(page * limit).all()
+    # Construct the select statement
+    stmt = select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
+
+    # Join the tables
+    stmt = stmt.join(CategoryAlias)
+    stmt = stmt.join(AudioAlias)
+    stmt = stmt.join(TextAlias)
+
+    # Apply pagination
+    stmt = stmt.limit(limit).offset(page * limit)
+
+    # Execute the statement and fetch all results
+    result = db.execute(stmt).fetchall()
+
+    return result
 
 
 def get_total_bindings(db: Session):
