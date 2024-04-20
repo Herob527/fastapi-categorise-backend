@@ -1,16 +1,16 @@
 from sqlalchemy.orm import Session
 
-from database_handle.models.audios import Audios
+from database_handle.models.audios import Audio
 
 
-def audio_exists(db: Session, audio: Audios):
+def audio_exists(db: Session, audio: Audio):
     return (
-        db.query(Audios)
+        db.query(Audio)
         .filter(
-            Audios.file_name == audio.file_name,
-            Audios.audio_length == audio.audio_length,
-            Audios.frequency == audio.frequency,
-            Audios.channels == audio.channels,
+            Audio.file_name == audio.file_name,
+            Audio.audio_length == audio.audio_length,
+            Audio.frequency == audio.frequency,
+            Audio.channels == audio.channels,
         )
         .first()
         is not None
@@ -18,22 +18,22 @@ def audio_exists(db: Session, audio: Audios):
 
 
 def get_one_audio(db: Session, id: str):
-    return db.query(Audios).filter(Audios.id == id).first()
+    return db.query(Audio).filter(Audio.id == id).first()
 
 
 def get_all_audios(db: Session):
-    return db.query(Audios).all()
+    return db.query(Audio).all()
 
 
-def create_audio(db: Session, audio: Audios):
+def create_audio(db: Session, audio: Audio):
     db.add(audio)
 
 
 def remove_audio(db: Session, id: str):
-    db.query(Audios).filter(Audios.id == id).delete()
+    db.query(Audio).filter(Audio.id == id).delete()
     db.commit()
 
 
-def update_audio(db: Session, id: str, audio: Audios):
-    db.query(Audios).filter(Audios.id == id).update(values=audio)
+def update_audio(db: Session, id: str, audio: Audio):
+    db.query(Audio).filter(Audio.id == id).update(values=audio)
     db.commit()

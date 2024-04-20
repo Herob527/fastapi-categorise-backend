@@ -3,7 +3,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from database_handle.models.categories import Categories
+from database_handle.models.categories import Category
 from database_handle.queries.categories import (
     create_category,
     get_all_categories as all_categories_query,
@@ -36,7 +36,7 @@ async def post_new_category(
         raise HTTPException(
             status_code=400, detail=f"Category '{category}' already exists"
         )
-    new_category = Categories(id=id, name=category)
+    new_category = Category(id=id, name=category)
     try:
         create_category(db=db, category=new_category)
     except Exception:
@@ -53,7 +53,7 @@ async def update_category(
     category = get_one_category(db, category_name)
     if category is None:
         return {"res": "Not found"}
-    new_category = Categories(id=category.id, category=new_category_name)
+    new_category = Category(id=category.id, category=new_category_name)
     category_update(db, new_category)
 
 

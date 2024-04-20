@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from typing import Annotated
+from typing import Annotated, List
 from pydantic.types import UUID4
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from database_handle.database import get_db
-from database_handle.models.bindings import Bindings
-from database_handle.models.categories import Categories
+from database_handle.models.bindings import BindingModel, Binding
+from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
     get_one_binding,
     create_binding as create_new_binding,
@@ -14,19 +14,11 @@ from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
     remove_binding as binding_remove,
 )
-import asyncio
 from database_handle.queries.categories import (
     create_category,
     get_one_category,
 )
 from routes.audios import post_new_audio
-from routes.schemas.main import (
-    AudiosModel,
-    BindingsModel,
-    CategoriesModel,
-    BindingsResponse,
-    TextsModel,
-)
 from routes.texts import post_new_text
 
 __all__ = ["router"]
@@ -43,42 +35,19 @@ def get_count(db: Session = Depends(get_db)):
     return get_total_bindings(db) or 0
 
 
-@router.get("")
+@router.get("", response_model=List[BindingModel])
 def get_paginated_bindings(
     page: int = 1, per_page: int = 10, db: Session = Depends(get_db)
 ):
     return paginated_bindings_query(page=page, limit=per_page, db=db)
 
 
-@router.get("/all", response_model=list[BindingsResponse])
+@router.get("/all", response_model=List[BindingModel])
 def get_all_bindings(db: Session = Depends(get_db), category: str | None = None):
-    query_data = all_bindings_query(db, category)
-    res: list[BindingsResponse] = []
-    for item in query_data:
-        bindings = BindingsModel(
-            id=item.Bindings.id,
-            text_id=item.Bindings.text_id,
-            category_id=item.Bindings.category_id,
-            audio_id=item.Bindings.audio_id,
-        )
-        categories = CategoriesModel(id=item.Categories.id, name=item.Categories.name)
-        audios = AudiosModel(
-            channels=item.Audios.channels,
-            id=item.Audios.id,
-            audio_length=item.Audios.audio_length,
-            file_name=item.Audios.file_name,
-            frequency=item.Audios.frequency,
-            url=item.Audios.url,
-        )
-        texts = TextsModel(text=item.Texts.text, id=item.Texts.id)
-        response = BindingsResponse(
-            bindings=bindings, categories=categories, audios=audios, texts=texts
-        )
-        res.append(response)
-    return res
+    return all_bindings_query(db, category)
 
 
-@router.get("/{binding_id}")
+@router.get("/{binding_id}", response_model=BindingModel)
 def get_binding(binding_id: str, db: Session = Depends(get_db)):
     return get_one_binding(db, binding_id)
 
@@ -92,10 +61,10 @@ async def create_binding(
     binding_id = uuid4()
     category_exist = get_one_category(db=db, name=category)
     category_id = uuid4() if category_exist is None else category_exist.id
-    new_binding = Bindings(
+    new_binding = Binding(
         id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
     )
-    new_category = Categories(id=category_id, name=category)
+    new_category = Category(id=category_id, name=category)
     try:
 
         await post_new_audio(id=binding_id, file=audio, db=db, commit=False)

@@ -1,8 +1,9 @@
+from pydantic import BaseModel
 from sqlalchemy import Column, Float, Integer, String, Uuid
 from ..database import Base
 
 
-class Audios(Base):
+class Audio(Base):
     __tablename__ = "audios"
 
     id = Column(Uuid, primary_key=True, index=True)
@@ -11,3 +12,15 @@ class Audios(Base):
     channels = Column(Integer, nullable=False)
     frequency = Column(Integer, nullable=False)
     audio_length = Column(Float, nullable=False)
+
+
+class AudioModel(BaseModel):
+    id: str
+    url: str
+    file_name: str
+    channels: int
+    frequency: int
+    audio_length: float
+
+    class Config:
+        orm_mode = True

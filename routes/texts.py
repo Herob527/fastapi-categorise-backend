@@ -3,7 +3,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from database_handle.models.texts import Texts
+from database_handle.models.texts import Text
 from database_handle.queries.texts import create_text
 
 __all__ = ["router"]
@@ -31,7 +31,7 @@ async def get_all_texts():
 async def post_new_text(
     id: UUID4, text: str = Form(), db: Session = Depends(get_db), commit=True
 ):
-    new_text = Texts(id=id, text=text)
+    new_text = Text(id=id, text=text)
     create_text(db=db, text=new_text)
     if commit:
         db.commit()

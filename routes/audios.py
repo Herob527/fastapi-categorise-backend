@@ -6,7 +6,7 @@ from pydantic import UUID4
 from pathlib import Path
 from sqlalchemy.orm import Session
 from database_handle.database import get_db
-from database_handle.models.audios import Audios
+from database_handle.models.audios import Audio
 from database_handle.queries.audios import create_audio, audio_exists
 
 
@@ -58,7 +58,7 @@ async def post_new_audio(
     filename_path = Path(file.filename or "")
     url = Path(output_dir, f"{uuid4()}{filename_path.suffix}")
 
-    params = Audios(
+    params = Audio(
         id=id,
         audio_length=duration,
         channels=channels,
