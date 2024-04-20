@@ -1,3 +1,4 @@
+from pydantic.types import UUID4
 from sqlalchemy import Column, ForeignKey, Uuid
 from sqlalchemy.orm import relationship
 
@@ -27,16 +28,23 @@ class Binding(Base):
         ForeignKey("texts.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
     )
-    category = relationship("Categories")
-    audio = relationship("Audios")
-    text = relationship("Texts")
+    category = relationship("Category")
+    audio = relationship("Audio")
+    text = relationship("Text")
+
+
+class BindingEntry(BaseModel):
+    id: UUID4
+    category_id: UUID4
+    audio_id: UUID4
+    text_id: UUID4
+
+    class Config:
+        orm_mode = True
 
 
 class BindingModel(BaseModel):
-    id: str
-    category_id: str
-    audio_id: str
-    text_id: str
+    binding: BindingEntry
     category: CategoryModel
     audio: AudioModel
     text: TextModel

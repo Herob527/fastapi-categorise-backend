@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic.types import UUID4
 from sqlalchemy import Column, Float, Integer, String, Uuid
 from ..database import Base
 
@@ -15,7 +16,7 @@ class Audio(Base):
 
 
 class AudioModel(BaseModel):
-    id: str
+    id: UUID4
     url: str
     file_name: str
     channels: int
