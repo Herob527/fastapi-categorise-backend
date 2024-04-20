@@ -44,9 +44,4 @@ async def root():
     return RedirectResponse("http://localhost:8000/docs")
 
 
-@app.get("/commit")
-def commit(db: Session = Depends(get_db)):
-    db.commit()
-
-
 print("Listeining")
