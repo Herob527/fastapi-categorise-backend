@@ -1,8 +1,9 @@
+from pydantic import UUID4
 from sqlalchemy.orm import Session
 from database_handle.models.texts import Text
 
 
-def get_one_text(db: Session, id: str):
+def get_one_text(db: Session, id: UUID4):
     return db.query(Text).filter(Text.id == id).first()
 
 
@@ -11,9 +12,10 @@ def get_all_texts(db: Session):
 
 
 def update_text(db: Session, text: Text):
-    db.query(Text).filter(Text.id == text.id).update(text.dict())
+    db.query(Text).filter(Text.id == text.id).update(
+        {"text": text.text, "id": text.id}, synchronize_session="evaluate"
+    )
     db.commit()
-    db.refresh(text)
 
 
 def remove_text(db: Session, id: str):
