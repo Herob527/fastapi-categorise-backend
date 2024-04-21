@@ -8,7 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
-from database_handle.queries.audios import create_audio, get_one_audio
+from database_handle.queries.audios import create_audio
 
 
 class NotAnAudio(Exception):
@@ -28,16 +28,6 @@ router = APIRouter(
 async def get_audio(audio_id: UUID4):
     print(f"Got audio with ID: {audio_id}")
     return {"test": audio_id}
-
-
-@router.get("/{audio_id}/file")
-async def get_audio_file(audio_id: UUID4, db: Session = Depends(get_db)):
-    result = get_one_audio(db, audio_id)
-    if result is None:
-        return {"error": "Audio not found"}
-    url = str(result.url)
-    # Assuming the URL is a path to the file on the filesystem
-    return FileResponse(url, filename=str(result.file_name))
 
 
 @router.get("/")
