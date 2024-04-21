@@ -1,9 +1,10 @@
+from typing import List
 from fastapi import APIRouter, Depends, Form, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from database_handle.models.categories import Category
+from database_handle.models.categories import Category, CategoryModel
 from database_handle.queries.categories import (
     create_category,
     get_all_categories as all_categories_query,
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get("", response_model=List[CategoryModel])
 async def get_all_categories(db: Session = Depends(get_db)):
     return all_categories_query(db)
 
@@ -29,7 +30,7 @@ async def get_all_categories(db: Session = Depends(get_db)):
 @router.post("")
 async def post_new_category(
     id: UUID4 = Form(), category: str = Form(), db: Session = Depends(get_db)
-):
+) -> None:
     res = get_one_category(db=db, name=category)
     if res is not None:
         db.rollback()
@@ -42,8 +43,6 @@ async def post_new_category(
     except Exception:
         pass
     db.commit()
-
-    return {"test": "test"}
 
 
 @router.patch("/{category_name}")
