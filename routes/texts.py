@@ -3,8 +3,12 @@ from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from database_handle.models.texts import Text
-from database_handle.queries.texts import create_text
+from database_handle.models.texts import Text, TextModel
+from database_handle.queries.texts import (
+    create_text,
+    get_one_text,
+    update_text as text_update,
+)
 
 __all__ = ["router"]
 
@@ -15,10 +19,10 @@ router = APIRouter(
 )
 
 
-@router.get("/{text_id}")
-async def get_text(text_id: int):
-    print(f"Got text with ID: {text_id}")
-    return {"test": text_id}
+@router.get("/{text_id}", response_model=TextModel)
+async def get_text(text_id: UUID4, db: Session = Depends(get_db)):
+    resp = get_one_text(db, text_id)
+    return resp
 
 
 @router.get("/")
@@ -39,9 +43,11 @@ async def post_new_text(
 
 
 @router.patch("/{text_id}")
-async def update_text(text_id: UUID4, new_text: str = Form()):
-    print("Updated text with name: {text_id}")
-    return {"test": text_id}
+async def update_text(
+    text_id: UUID4, new_text: str, db: Session = Depends(get_db)
+) -> None:
+    text_update(db, Text(id=text_id, text=new_text))
+    return None
 
 
 @router.delete("/{text_id}")
