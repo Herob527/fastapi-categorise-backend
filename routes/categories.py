@@ -1,4 +1,5 @@
 from typing import List
+from uuid import uuid4
 from fastapi import APIRouter, Depends, Form, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
@@ -29,7 +30,7 @@ async def get_all_categories(db: Session = Depends(get_db)):
 
 @router.post("")
 async def post_new_category(
-    id: UUID4 = Form(), category: str = Form(), db: Session = Depends(get_db)
+    id: UUID4 | None = None, category: str = Form(), db: Session = Depends(get_db)
 ) -> None:
     res = get_one_category(db=db, name=category)
     if res is not None:
@@ -37,12 +38,15 @@ async def post_new_category(
         raise HTTPException(
             status_code=400, detail=f"Category '{category}' already exists"
         )
-    new_category = Category(id=id, name=category)
+    new_category = Category(id=id or uuid4(), name=category)
     try:
         create_category(db=db, category=new_category)
     except Exception:
-        pass
-    db.commit()
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Server error - something with session"
+        )
+    return None
 
 
 @router.patch("/{category_name}")
