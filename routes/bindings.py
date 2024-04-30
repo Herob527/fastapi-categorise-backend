@@ -13,6 +13,7 @@ from database_handle.queries.bindings import (
     get_paginated_bindings as paginated_bindings_query,
     get_all_bindings as all_bindings_query,
     remove_binding as binding_remove,
+    update_binding_category,
 )
 from database_handle.queries.categories import (
     create_category,
@@ -86,3 +87,11 @@ async def create_binding(
 def remove_binding(binding_id: UUID4, db: Session = Depends(get_db)):
     binding_remove(db, binding_id)
     return {"hejo": binding_id}
+
+
+@router.put("/{binding_id}/category_assign/{category_id}")
+def binding_category_update(
+    binding_id: UUID4, category_id: UUID4, db: Session = Depends(get_db)
+):
+    update_binding_category(binding_id, category_id, db)
+    return {"hejo": binding_id, "hejo2": category_id}
