@@ -38,10 +38,12 @@ def get_count(db: Session = Depends(get_db)):
 
 @router.get("", response_model=List[BindingModel])
 def get_paginated_bindings(
-    page: int = 1, per_page: int = 10, db: Session = Depends(get_db)
+    page: int = 0, per_page: int = 10, db: Session = Depends(get_db)
 ):
-    if page <= 0:
-        raise HTTPException(status_code=400, detail="Page must be greater than 0")
+    if page < 0:
+        raise HTTPException(
+            status_code=400, detail="Page must be greater than or equal 0"
+        )
     if per_page <= 0:
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
     return paginated_bindings_query(page=page, limit=per_page, db=db)
