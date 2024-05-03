@@ -1,19 +1,29 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from typing import Annotated, List
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
 from sqlalchemy.orm import Session
-from uuid import uuid4
+
 from database_handle.database import get_db
-from database_handle.models.bindings import BindingModel, Binding
+from database_handle.models.bindings import Binding, BindingModel
 from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
-    get_one_binding,
     create_binding as create_new_binding,
-    get_total_bindings,
-    get_paginated_bindings as paginated_bindings_query,
+)
+from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
-    remove_binding as binding_remove,
+)
+from database_handle.queries.bindings import (
+    get_one_binding,
+    get_total_bindings,
     update_binding_category,
+)
+from database_handle.queries.bindings import (
+    get_paginated_bindings as paginated_bindings_query,
+)
+from database_handle.queries.bindings import (
+    remove_binding as binding_remove,
 )
 from database_handle.queries.categories import (
     create_category,

@@ -1,16 +1,26 @@
 from pathlib import Path
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from database_handle.database import engine, get_db
-from fastapi import Depends, FastAPI
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from database_handle.models import texts, audios, categories, bindings
+
+from database_handle.database import engine
+from database_handle.models import audios, bindings, categories, texts
+from routes import (
+    audios as r_audios,
+)
+from routes import (
+    bindings as r_bindings,
+)
 from routes import (
     categories as r_categories,
+)
+from routes import (
+    finalize as r_finalise,
+)
+from routes import (
     texts as r_texts,
-    audios as r_audios,
-    bindings as r_bindings,
 )
 
 texts.Base.metadata.create_all(engine)
@@ -37,6 +47,7 @@ app.include_router(r_categories.router)
 app.include_router(r_texts.router)
 app.include_router(r_audios.router)
 app.include_router(r_bindings.router)
+app.include_router(r_finalise.router)
 
 
 @app.get("/")

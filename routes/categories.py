@@ -1,5 +1,6 @@
 from typing import List
 from uuid import uuid4
+
 from fastapi import APIRouter, Depends, Form, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
@@ -8,9 +9,15 @@ from database_handle.database import get_db
 from database_handle.models.categories import Category, CategoryModel
 from database_handle.queries.categories import (
     create_category,
-    get_all_categories as all_categories_query,
     get_one_category,
+)
+from database_handle.queries.categories import (
+    get_all_categories as all_categories_query,
+)
+from database_handle.queries.categories import (
     remove_category as category_delete,
+)
+from database_handle.queries.categories import (
     update_category as category_update,
 )
 
@@ -44,7 +51,7 @@ async def post_new_category(
     except Exception:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"Server error - something with session"
+            status_code=500, detail="Server error - something with session"
         )
     return None
 

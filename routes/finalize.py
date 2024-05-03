@@ -1,15 +1,13 @@
 from collections.abc import Callable
 from pathlib import Path
-from typing import overload
+from shutil import copy2
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from shutil import copy2
-
 from database_handle.queries.bindings import get_all_bindings
-from database_handle.queries.categories import get_all_categories
 
 __all__ = ["router"]
 
@@ -52,16 +50,13 @@ router = APIRouter(
 )
 
 
-def prepare_structure(entries: list[str]):
-    for entry in entries:
-        path = Path(output_dir, entry)
-        path.mkdir(parents=True, exist_ok=True)
-
-
 @router.post("/")
 def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
-    bindings, result = get_all_bindings(db)
-    for binding in bindings:
-        result
-        category = binding[1]
-        
+    bindings = get_all_bindings(db)
+    categories = (
+        set(map(lambda x: x.tuple()[1].name.name, bindings))
+        if config.divide_by_category
+        else ["all"]
+    )
+    for category in categories:
+        prepare_path(category)

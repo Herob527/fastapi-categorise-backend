@@ -1,11 +1,12 @@
-from uuid import uuid4
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
-import librosa
 from io import BytesIO
-from pydantic import UUID4
 from pathlib import Path
+from uuid import uuid4
+
+import librosa
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
+from pydantic import UUID4
 from sqlalchemy.orm import Session
+
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
 from database_handle.queries.audios import create_audio

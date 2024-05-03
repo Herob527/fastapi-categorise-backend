@@ -1,8 +1,8 @@
 from pydantic.types import UUID4
 from sqlalchemy import select
 from sqlalchemy.orm import Session, aliased
-from database_handle.models.audios import Audio
 
+from database_handle.models.audios import Audio
 from database_handle.models.bindings import Binding
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
