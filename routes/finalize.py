@@ -20,6 +20,15 @@ __all__ = ["router"]
 output_dir = Path("output")
 
 
+"""
+line_format support
+- file name     - {file}
+- category name - {category} - potential post-processing
+- text          - {text}
+- duration      - {duration}
+"""
+
+
 class FinaliseConfigModel(BaseModel):
     omit_empty: bool = True
     # Not supported yet
