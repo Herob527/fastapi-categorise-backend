@@ -22,7 +22,7 @@ def get_all_bindings(db: Session, category_name: str | None = None):
 
     stmt = (
         select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
-        .join(CategoryAlias)
+        .outerjoin(CategoryAlias)
         .join(AudioAlias)
         .join(TextAlias)
     )
@@ -39,13 +39,12 @@ def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):
     # Construct the select statement
     stmt = (
         select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
-        .join(CategoryAlias)
+        .outerjoin(CategoryAlias)
         .join(AudioAlias)
         .join(TextAlias)
     )
 
-    stmt = stmt.limit(limit).offset(page * limit)
-
+    stmt = stmt.limit(limit).offset(page * limit).order_by(AudioAlias.file_name)
     result = db.execute(stmt).fetchall()
 
     return result

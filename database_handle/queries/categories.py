@@ -17,9 +17,7 @@ def get_all_categories(db: Session):
 
 
 def remove_category(db: Session, name: str):
-    db.query(Category).filter(Category.name == name).delete(
-        synchronize_session=False
-    )
+    db.query(Category).filter(Category.name == name).delete(synchronize_session=False)
     db.commit()
 
 

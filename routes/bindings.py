@@ -62,22 +62,27 @@ def get_binding(binding_id: str, db: Session = Depends(get_db)):
 @router.post("")
 async def create_binding(
     audio: Annotated[UploadFile, File()],
-    category: str = Form(default="unknown"),
+    category: str | None = None,
     db: Session = Depends(get_db),
 ):
     binding_id = uuid4()
-    category_exist = get_one_category(db=db, name=category)
+    category_exist = (
+        get_one_category(db=db, name=category) if category is not None else None
+    )
     category_id = uuid4() if category_exist is None else category_exist.id
     new_binding = Binding(
         id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
     )
-    new_category = Category(id=category_id, name=category)
+    new_category = (
+        Category(id=category_id, name=category) if category is not None else None
+    )
     try:
 
         await post_new_audio(id=binding_id, file=audio, db=db, commit=False)
         await post_new_text(id=binding_id, text="", db=db, commit=False)
         create_new_binding(db=db, binding=new_binding)
-        create_category(db=db, category=new_category)
+        if new_category is not None:
+            create_category(db=db, category=new_category)
         db.commit()
     except HTTPException as e:
         db.rollback()

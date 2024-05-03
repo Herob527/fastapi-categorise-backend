@@ -15,8 +15,8 @@ class Binding(Base):
     id = Column(Uuid, primary_key=True, index=True)
     category_id = Column(
         Uuid,
-        ForeignKey("categories.id", ondelete="CASCADE", onupdate="CASCADE"),
-        nullable=False,
+        ForeignKey("categories.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
     )
     audio_id = Column(
         Uuid,
@@ -35,7 +35,7 @@ class Binding(Base):
 
 class BindingEntry(BaseModel):
     id: UUID4
-    category_id: UUID4
+    category_id: UUID4 | None
     audio_id: UUID4
     text_id: UUID4
 
@@ -45,7 +45,7 @@ class BindingEntry(BaseModel):
 
 class BindingModel(BaseModel):
     binding: BindingEntry
-    category: CategoryModel
+    category: CategoryModel | None
     audio: AudioModel
     text: TextModel
 
