@@ -101,4 +101,8 @@ def binding_category_update(
     binding_id: UUID4, category_id: UUID4, db: Session = Depends(get_db)
 ):
     update_binding_category(binding_id, category_id, db)
-    return {"hejo": binding_id, "hejo2": category_id}
+
+
+@router.put("/{binding_id}/remove_category")
+def binding_category_remove(binding_id: UUID4, db: Session = Depends(get_db)):
+    update_binding_category(binding_id, None, db)

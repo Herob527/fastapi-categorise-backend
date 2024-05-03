@@ -63,7 +63,7 @@ def remove_binding(db: Session, id: UUID4):
     db.commit()
 
 
-def update_binding_category(binding_id: UUID4, category_id: UUID4, db: Session):
+def update_binding_category(binding_id: UUID4, category_id: UUID4 | None, db: Session):
     db.query(Binding).where(Binding.id == binding_id).update(
         {"category_id": category_id}
     )
