@@ -41,7 +41,6 @@ class FinaliseConfigModel(BaseModel):
 def prepare_path(dir: str):
     path = Path(output_dir, dir, "wavs")
     path.mkdir(parents=True, exist_ok=True)
-    return path
 
 
 def copy_file(
