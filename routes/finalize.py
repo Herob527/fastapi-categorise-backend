@@ -22,6 +22,7 @@ output_dir = Path("output")
 
 class FinaliseConfigModel(BaseModel):
     omit_empty: bool = True
+    # Not supported yet
     line_format: str = "{file}|{text}"
     divide_by_category: bool = True
     export_transcript: bool = True
@@ -68,7 +69,7 @@ def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
             str(category.name) if category is not None else config.uncaterized_name,
         )
         if config.divide_by_category
-        else output_dir
+        else Path(output_dir, "all")
     )
 
     output_file = Path(target_dir, "wavs", str(audio.file_name))
@@ -92,7 +93,7 @@ def process_transcript(bindings: Sequence[BindingEntry], config: FinaliseConfigM
                 str(category.name) if category is not None else config.uncaterized_name,
             )
             if config.divide_by_category
-            else output_dir
+            else Path(output_dir, "all")
         )
 
         output_file = Path(target_dir, "transcript.txt")
@@ -126,7 +127,7 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
             bindings,
         )
         if config.divide_by_category
-        else map(lambda _: "All", ["all"])
+        else map(lambda x: x, ["all"])
     )
     audio_paths = map(lambda x: process_path(x, config), bindings)
 
@@ -138,9 +139,10 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
     for audio_path in audio_paths:
         copy_file(str(audio_path[0]), str(audio_path[1]))
 
-    for data in transcript_data:
-        write_transcript(
-            data["lines"],
-            str(data["path"]),
-            lambda x: not x.strip().endswith("|") if config.omit_empty else True,
-        )
+    if config.export_transcript:
+        for data in transcript_data:
+            write_transcript(
+                data["lines"],
+                str(data["path"]),
+                lambda x: not x.strip().endswith("|") if config.omit_empty else True,
+            )
