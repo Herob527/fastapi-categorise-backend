@@ -103,7 +103,7 @@ def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
             str(category.name) if category is not None else config.uncaterized_name,
         )
         if config.divide_by_category
-        else Path(output_dir, "all")
+        else Path(output_dir)
     )
 
     output_file = Path(target_dir, "wavs", str(audio.file_name))
@@ -154,7 +154,7 @@ def process_transcript(
                 str(category.name) if category is not None else config.uncaterized_name,
             )
             if config.divide_by_category
-            else Path(output_dir, "all")
+            else Path(output_dir)
         )
 
         output_file = Path(target_dir, "transcript.txt")
@@ -194,8 +194,10 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
 
     transcript_data = process_transcript(bindings, config, indexed_categories)
 
-    for category in categories if config.divide_by_category else ["all"]:
+    for category in categories if config.divide_by_category else []:
         prepare_path(category)
+    else:
+        Path(output_dir, "wavs").mkdir(parents=True, exist_ok=True)
 
     for audio_path in audio_paths:
         copy_file(str(audio_path[0]), str(audio_path[1]))
