@@ -38,6 +38,8 @@ class FinaliseConfigModel(BaseModel):
     """,
     )
     divide_by_category: bool = True
+    category_to_lower: bool = False
+    category_space_replacer: str = " "
     export_transcript: bool = True
     uncaterized_name: str = "Uncategorized"
 
@@ -100,7 +102,10 @@ def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
     target_dir = (
         Path(
             output_dir,
-            str(category.name) if category is not None else config.uncaterized_name,
+            process_category(
+                str(category.name) if category is not None else config.uncaterized_name,
+                config,
+            ),
         )
         if config.divide_by_category
         else Path(output_dir)
@@ -120,6 +125,13 @@ class TranscriptEntry(TypedDict):
     path: Path
 
 
+def process_category(category: str, config: FinaliseConfigModel):
+    res = category.replace(" ", config.category_space_replacer)
+    if config.category_to_lower:
+        res = res.lower()
+    return res
+
+
 def process_line(
     binding: BindingEntry,
     config: FinaliseConfigModel,
@@ -137,7 +149,9 @@ def process_line(
         file=audio.file_name,
         text=text.text if str(text.text).strip() != "" else EMPTY_TEXT_TAG,
         duration=audio.audio_length,
-        category=category.name if category else config.uncaterized_name,
+        category=process_category(
+            str(category.name if category else config.uncaterized_name), config
+        ),
         category_index=category_index,
     )
     return f"{formatted_line}\n"
@@ -154,7 +168,14 @@ def process_transcript(
         target_dir = (
             Path(
                 output_dir,
-                str(category.name) if category is not None else config.uncaterized_name,
+                process_category(
+                    (
+                        str(category.name)
+                        if category is not None
+                        else config.uncaterized_name
+                    ),
+                    config,
+                ),
             )
             if config.divide_by_category
             else Path(output_dir)
@@ -185,12 +206,22 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
     bindings = get_all_bindings(db)
     categories = set(
         map(
-            lambda x: (
-                str(x.tuple()[1].name) if x.tuple()[1] else config.uncaterized_name
+            lambda x: x.replace(" ", config.category_space_replacer),
+            map(
+                lambda x: x.lower() if config.category_to_lower else x,
+                map(
+                    lambda x: (
+                        str(x.tuple()[1].name)
+                        if x.tuple()[1]
+                        else config.uncaterized_name
+                    ),
+                    bindings,
+                ),
             ),
-            bindings,
         )
     )
+    print("[finalise - categories]", categories)
+    print("[finalise - config]", config)
     audio_paths = filter(
         lambda x: len(x) == 2, map(lambda x: process_path(x, config), bindings)
     )
