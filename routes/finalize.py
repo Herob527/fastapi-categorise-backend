@@ -95,7 +95,7 @@ type BindingEntry = Row[Tuple[Binding, Category, Audio, Text]]
 
 
 def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
-    _, category, audio, _ = _binding.tuple()
+    _, category, audio, text = _binding.tuple()
 
     target_dir = (
         Path(
@@ -108,6 +108,9 @@ def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
 
     output_file = Path(target_dir, "wavs", str(audio.file_name))
     source_file = Path(str(audio.url))
+
+    if config.omit_empty and str(text.text).strip() == "":
+        return []
 
     return [source_file, output_file]
 
@@ -188,7 +191,9 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
             bindings,
         )
     )
-    audio_paths = map(lambda x: process_path(x, config), bindings)
+    audio_paths = filter(
+        lambda x: len(x) == 2, map(lambda x: process_path(x, config), bindings)
+    )
 
     indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
