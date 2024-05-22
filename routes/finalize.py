@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 import re
 from shutil import copy2, rmtree
-from typing import Dict, Tuple, TypedDict
+from typing import Dict, List, Tuple, TypedDict, Union
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, validator
@@ -22,6 +22,18 @@ output_dir = Path("output")
 
 
 EMPTY_TEXT_TAG = "<empty-text>"
+
+
+class FileModel(BaseModel):
+    file_name: str
+
+
+class DirectoryModel(BaseModel):
+    dir_name: str
+    files: List[Union["FileModel", "DirectoryModel"]] = []
+
+
+DirectoryModel.update_forward_refs()
 
 
 class FinaliseConfigModel(BaseModel):
@@ -199,7 +211,22 @@ def process_transcript(
     return res.values()
 
 
-@router.post("/")
+def convert_tree_to_pydantic(root: Path):
+    print(root)
+    entries = [x for x in root.glob("*")]
+    files = []
+    dirs = []
+
+    for i in entries:
+        if i.is_dir():
+            dirs.append(convert_tree_to_pydantic(i))
+        else:
+            files.append(FileModel(file_name=i.name))
+    combined = [*files, *dirs]
+    return DirectoryModel(dir_name=root.name, files=combined)
+
+
+@router.post("/", response_model=DirectoryModel)
 def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
     rmtree(output_dir, ignore_errors=True)
     output_dir.mkdir()
@@ -220,8 +247,6 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
             ),
         )
     )
-    print("[finalise - categories]", categories)
-    print("[finalise - config]", config)
     audio_paths = filter(
         lambda x: len(x) == 2, map(lambda x: process_path(x, config), bindings)
     )
@@ -246,3 +271,5 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
                 lambda x: x.find(EMPTY_TEXT_TAG) == -1 if config.omit_empty else True,
                 lambda x: x.replace(EMPTY_TEXT_TAG, ""),
             )
+    converted_tree = convert_tree_to_pydantic(output_dir)
+    return converted_tree
