@@ -41,7 +41,7 @@ class BindingEntry(BaseModel):
     text_id: UUID4
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class BindingModel(BaseModel):
@@ -51,4 +51,4 @@ class BindingModel(BaseModel):
     text: TextModel
 
     class Config:
-        orm_mode = True
+        from_attributes = True
