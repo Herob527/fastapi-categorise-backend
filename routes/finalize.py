@@ -1,11 +1,12 @@
+from __future__ import annotations
 from collections.abc import Callable, Sequence
 from pathlib import Path
 import re
 from shutil import copy2, rmtree
-from typing import Dict, List, Tuple, TypedDict, Union
+from typing import Dict, List, Literal, Tuple, TypedDict, Union
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import Row
 from sqlalchemy.orm import Session
 
@@ -26,14 +27,16 @@ EMPTY_TEXT_TAG = "<empty-text>"
 
 class FileModel(BaseModel):
     file_name: str
+    is_dir: Literal[False] = False
 
 
 class DirectoryModel(BaseModel):
     dir_name: str
-    files: List[Union["FileModel", "DirectoryModel"]] = []
+    is_dir: Literal[True] = True
+    files: List[Union[FileModel, DirectoryModel]]
 
 
-DirectoryModel.update_forward_refs()
+DirectoryModel.model_rebuild()
 
 
 class FinaliseConfigModel(BaseModel):
@@ -55,7 +58,7 @@ class FinaliseConfigModel(BaseModel):
     export_transcript: bool = True
     uncaterized_name: str = "Uncategorized"
 
-    @validator("line_format")
+    @field_validator("line_format")
     def validate_line_format(cls, v):
         format_keys = re.findall(r"\{(.*?)\}", v)
 
