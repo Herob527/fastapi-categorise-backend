@@ -215,11 +215,10 @@ def process_transcript(
 
 
 def convert_tree_to_pydantic(root: Path):
-    entries = [x for x in root.glob("*")]
     files = []
     dirs = []
 
-    for i in entries:
+    for i in root.glob("*"):
         if i.is_dir():
             dirs.append(convert_tree_to_pydantic(i))
         else:
