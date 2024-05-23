@@ -1,11 +1,9 @@
 from collections.abc import Callable, Sequence
 from pathlib import Path
-import re
 from shutil import copy2, rmtree
-from typing import Dict, List, Tuple, TypedDict, Union
+from typing import Dict, Tuple, TypedDict
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field, validator
 from sqlalchemy import Row
 from sqlalchemy.orm import Session
 
@@ -15,6 +13,7 @@ from database_handle.models.bindings import Binding
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 from database_handle.queries.bindings import get_all_bindings
+from models.finalise import DirectoryModel, FileModel, FinaliseConfigModel
 
 __all__ = ["router"]
 
@@ -23,51 +22,6 @@ output_dir = Path("output")
 
 EMPTY_TEXT_TAG = "<empty-text>"
 
-
-class FileModel(BaseModel):
-    file_name: str
-
-
-class DirectoryModel(BaseModel):
-    dir_name: str
-    files: List[Union["FileModel", "DirectoryModel"]] = []
-
-
-DirectoryModel.update_forward_refs()
-
-
-class FinaliseConfigModel(BaseModel):
-    omit_empty: bool = True
-    line_format: str = Field(
-        "{file}|{text}",
-        description="""\r
-    supported keys:\r
-        {file} - file name\r
-        {category} - category name\r
-        {category_index} - category index (created automatically)\r
-        {text} - text of entry\r
-        {duration} - duration of audio in seconds\r
-    """,
-    )
-    divide_by_category: bool = True
-    category_to_lower: bool = False
-    category_space_replacer: str = " "
-    export_transcript: bool = True
-    uncaterized_name: str = "Uncategorized"
-
-    @validator("line_format")
-    def validate_line_format(cls, v):
-        format_keys = re.findall(r"\{(.*?)\}", v)
-
-        expected_keys = ["file", "duration", "category", "category_index", "text"]
-
-        for i in format_keys:
-            if i not in expected_keys:
-                raise ValueError(
-                    f"Unsupported key '{i}' in line_format.\nSupported keys: {expected_keys}"
-                )
-
-        return v
 
 
 def prepare_path(dir: str):
