@@ -27,12 +27,12 @@ EMPTY_TEXT_TAG = "<empty-text>"
 
 class FileModel(BaseModel):
     file_name: str
-    is_dir: Literal[False] = False
+    is_dir: Literal[False]
 
 
 class DirectoryModel(BaseModel):
     dir_name: str
-    is_dir: Literal[True] = True
+    is_dir: Literal[True]
     files: List[Union[FileModel, DirectoryModel]]
 
 
@@ -224,9 +224,9 @@ def convert_tree_to_pydantic(root: Path):
         if i.is_dir():
             dirs.append(convert_tree_to_pydantic(i))
         else:
-            files.append(FileModel(file_name=i.name))
+            files.append(FileModel(file_name=i.name, is_dir=False))
     combined = [*files, *dirs]
-    return DirectoryModel(dir_name=root.name, files=combined)
+    return DirectoryModel(dir_name=root.name, files=combined, is_dir=True)
 
 
 @router.post("/", response_model=DirectoryModel)
