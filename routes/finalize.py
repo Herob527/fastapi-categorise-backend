@@ -215,7 +215,6 @@ def process_transcript(
 
 
 def convert_tree_to_pydantic(root: Path):
-    print(root)
     entries = [x for x in root.glob("*")]
     files = []
     dirs = []
