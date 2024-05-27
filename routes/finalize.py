@@ -255,10 +255,10 @@ def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
     indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
     transcript_data = process_transcript(bindings, config, indexed_categories)
-
-    for category in categories if config.divide_by_category else []:
+    used_category = categories if config.divide_by_category else []
+    for category in used_category:
         prepare_path(category)
-    else:
+    if len(used_category) == 0:
         Path(output_dir, "wavs").mkdir(parents=True, exist_ok=True)
 
     for audio_path in audio_paths:
