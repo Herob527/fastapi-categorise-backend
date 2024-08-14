@@ -6,7 +6,7 @@ from pydantic.types import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
-from database_handle.models.bindings import Binding, BindingModel
+from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
 from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
     create_binding as create_new_binding,
@@ -46,7 +46,7 @@ def get_count(db: Session = Depends(get_db)):
     return get_total_bindings(db) or 0
 
 
-@router.get("", response_model=List[BindingModel])
+@router.get("", response_model=PaginatedBindingModel)
 def get_paginated_bindings(
     page: int = 0, per_page: int = 10, db: Session = Depends(get_db)
 ):
@@ -56,7 +56,10 @@ def get_paginated_bindings(
         )
     if per_page <= 0:
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
-    return paginated_bindings_query(page=page, limit=per_page, db=db)
+
+    return PaginatedBindingModel(
+        bindings=paginated_bindings_query(page=page, limit=per_page, db=db), page=page
+    )
 
 
 @router.get("/all", response_model=List[BindingModel])

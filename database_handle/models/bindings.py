@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel
 from pydantic.types import UUID4
 from sqlalchemy import Column, ForeignKey, Uuid
@@ -52,3 +53,8 @@ class BindingModel(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaginatedBindingModel(BaseModel):
+    bindings: List[BindingModel]
+    page: int
