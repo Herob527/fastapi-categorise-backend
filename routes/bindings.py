@@ -10,6 +10,7 @@ from database_handle.models.bindings import Binding, BindingModel, PaginatedBind
 from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
     create_binding as create_new_binding,
+    get_pagination,
 )
 from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
@@ -56,9 +57,12 @@ def get_paginated_bindings(
         )
     if per_page <= 0:
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
+    pagination = get_pagination(db)
 
     return PaginatedBindingModel(
-        bindings=paginated_bindings_query(page=page, limit=per_page, db=db), page=page
+        bindings=paginated_bindings_query(page=page, limit=per_page, db=db),
+        page=page,
+        pagination=pagination,
     )
 
 

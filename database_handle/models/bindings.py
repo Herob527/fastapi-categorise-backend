@@ -35,6 +35,10 @@ class Binding(Base):
     text = relationship("Text")
 
 
+class PaginationModel(BaseModel):
+    total: int
+
+
 class BindingEntry(BaseModel):
     id: UUID4
     category_id: UUID4 | None
@@ -57,4 +61,5 @@ class BindingModel(BaseModel):
 
 class PaginatedBindingModel(BaseModel):
     bindings: List[BindingModel]
+    pagination: PaginationModel
     page: int
