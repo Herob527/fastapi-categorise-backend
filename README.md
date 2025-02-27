@@ -14,4 +14,4 @@
 ## DOCKER
 
 - Build: `docker build  -t 'backend' .`
-- Run: `docker run -p 80:80 --rm --network host backend`
+- Run: `docker run -p 80:80 --rm backend`
