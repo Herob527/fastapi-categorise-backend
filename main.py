@@ -52,7 +52,7 @@ app.include_router(r_finalise.router)
 
 @app.get("/")
 async def root():
-    return RedirectResponse("http://localhost:8000/docs")
+    return RedirectResponse("http://localhost:80/docs")
 
 
 print("Listeining")

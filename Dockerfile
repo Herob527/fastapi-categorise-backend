@@ -14,6 +14,6 @@ COPY . /app
 
 RUN poetry install
 
-EXPOSE 8000
+EXPOSE 80
 
 CMD ["poetry", "run", "uvicorn", "main:app"]
