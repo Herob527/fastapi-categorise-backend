@@ -16,4 +16,4 @@ RUN poetry install
 
 EXPOSE 80
 
-CMD ["poetry", "run", "uvicorn", "main:app"]
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
