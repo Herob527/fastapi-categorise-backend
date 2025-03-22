@@ -1,11 +1,12 @@
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
 
+from pydantic import UUID4
 from database_handle.models.categories import Category
 
 
-def get_one_category(db: Session, name: Column[str] | str) -> Category | None:
-    return db.query(Category).filter(Category.name == name).first()
+def get_one_category(db: Session, id: Column[str] | str | UUID4) -> Category | None:
+    return db.query(Category).filter(Category.id == id).first()
 
 
 def get_categories_count(db: Session):
@@ -22,7 +23,7 @@ def remove_category(db: Session, name: str):
 
 
 def create_category(db: Session, category: Category):
-    category_exists = get_one_category(db, name=category.name)
+    category_exists = get_one_category(db, id=category.id)
     if category_exists:
         return
     db.add(category)
