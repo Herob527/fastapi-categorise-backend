@@ -57,11 +57,11 @@ async def post_new_category(
     return None
 
 
-@router.patch("/{category_name}")
+@router.patch("/{id}")
 async def update_category(
-    category_name: str, new_category_name: str = Form(), db: Session = Depends(get_db)
+    id: UUID4, new_category_name: str = Form(), db: Session = Depends(get_db)
 ):
-    category = get_one_category(db, category_name)
+    category = get_one_category(db, id)
     if category is None:
         return {"res": "Not found"}
     new_category = Category(id=category.id, name=new_category_name)
