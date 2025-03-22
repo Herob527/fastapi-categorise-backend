@@ -8,6 +8,8 @@ from database_handle.models.categories import Category
 def get_one_category(db: Session, id: Column[str] | str | UUID4) -> Category | None:
     return db.query(Category).filter(Category.id == id).first()
 
+def get_one_category_by_name(db: Session, name: Column[str] | str) -> Category | None:
+    return db.query(Category).filter(Category.name == name).first()
 
 def get_categories_count(db: Session):
     return db.query(Category).count()

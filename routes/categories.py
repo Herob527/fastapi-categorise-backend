@@ -10,6 +10,7 @@ from database_handle.models.categories import Category, CategoryModel
 from database_handle.queries.categories import (
     create_category,
     get_one_category,
+    get_one_category_by_name,
 )
 from database_handle.queries.categories import (
     get_all_categories as all_categories_query,
@@ -46,6 +47,14 @@ async def post_new_category(
             raise HTTPException(
                 status_code=400, detail=f"Category '{category}' already exists"
             )
+
+    res = get_one_category_by_name(db=db, name=category)
+    if res is not None:
+        db.rollback()
+        raise HTTPException(
+            status_code=400, detail=f"Category '{category}' already exists"
+        )
+
     new_category = Category(id=id or uuid4(), name=category)
     try:
         create_category(db=db, category=new_category)
