@@ -63,7 +63,7 @@ async def update_category(
     category = get_one_category(db, category_name)
     if category is None:
         return {"res": "Not found"}
-    new_category = Category(id=category.id, category=new_category_name)
+    new_category = Category(id=category.id, name=new_category_name)
     category_update(db, new_category)
 
 

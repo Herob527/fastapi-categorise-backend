@@ -31,6 +31,6 @@ def create_category(db: Session, category: Category):
 
 def update_category(db: Session, category: Category):
     db.query(Category).filter(Category.id == category.id).update(
-        category.dict(), synchronize_session=False
+            {"name": category.name, "id": category.id}, synchronize_session=False
     )
     db.commit()
