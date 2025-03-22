@@ -37,14 +37,15 @@ async def get_all_categories(db: Session = Depends(get_db)):
 
 @router.post("")
 async def post_new_category(
-    id: UUID4 | None = None, category: str = Form(), db: Session = Depends(get_db)
+    id: UUID4 | None = Form(), category: str = Form(), db: Session = Depends(get_db)
 ) -> None:
-    res = get_one_category(db=db, name=category)
-    if res is not None:
-        db.rollback()
-        raise HTTPException(
-            status_code=400, detail=f"Category '{category}' already exists"
-        )
+    if id is not None:
+        res = get_one_category(db=db, id=id)
+        if res is not None:
+            db.rollback()
+            raise HTTPException(
+                status_code=400, detail=f"Category '{category}' already exists"
+            )
     new_category = Category(id=id or uuid4(), name=category)
     try:
         create_category(db=db, category=new_category)
