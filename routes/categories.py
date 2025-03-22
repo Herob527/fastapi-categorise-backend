@@ -37,7 +37,7 @@ async def get_all_categories(db: Session = Depends(get_db)):
 
 @router.post("")
 async def post_new_category(
-    id: UUID4 | None = Form(), category: str = Form(), db: Session = Depends(get_db)
+    id: UUID4 | None = None, category: str = Form(), db: Session = Depends(get_db)
 ) -> None:
     if id is not None:
         res = get_one_category(db=db, id=id)
