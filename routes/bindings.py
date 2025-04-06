@@ -76,13 +76,17 @@ def get_binding(binding_id: str, db: Session = Depends(get_db)):
     return get_one_binding(db, binding_id)
 
 
+class Exists(str):
+    EXISTS = "EXISTS"
+    NOT_EXISTS = "NOT_EXISTS"
+
 def make_category_data(category_name: str | None, db: Session):
     if category_name is None:
-        return (None, "EXISTS")
+        return (None, Exists.EXISTS)
     existing_category = get_one_category_by_name(db=db, name=category_name)
     if existing_category is not None:
-        return (existing_category, "EXISTS")
-    return (Category(id=uuid4(),name=category_name), "NOT_EXISTS")
+        return (existing_category, Exists.EXISTS)
+    return (Category(id=uuid4(),name=category_name), Exists.NOT_EXISTS)
 
 @router.post("")
 async def create_binding(
