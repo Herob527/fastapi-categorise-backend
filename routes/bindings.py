@@ -59,8 +59,9 @@ def get_paginated_bindings(
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
     pagination = get_pagination(db)
 
+    bindings = paginated_bindings_query(page=page, limit=per_page, db=db)
     return PaginatedBindingModel(
-        bindings=paginated_bindings_query(page=page, limit=per_page, db=db),
+        bindings=bindings,
         page=page,
         pagination=pagination,
     )
