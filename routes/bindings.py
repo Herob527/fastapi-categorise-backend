@@ -76,6 +76,14 @@ def get_binding(binding_id: str, db: Session = Depends(get_db)):
     return get_one_binding(db, binding_id)
 
 
+def make_category_data(category_name: str | None, db: Session):
+    if category_name is None:
+        return (None, "EXISTS")
+    existing_category = get_one_category_by_name(db=db, name=category_name)
+    if existing_category is not None:
+        return (existing_category, "EXISTS")
+    return (Category(id=uuid4(),name=category_name), "NOT_EXISTS")
+
 @router.post("")
 async def create_binding(
     audio: Annotated[UploadFile, File()],
@@ -83,23 +91,16 @@ async def create_binding(
     db: Session = Depends(get_db),
 ):
     binding_id = uuid4()
-    category_exist = (
-        get_one_category_by_name(db=db, name=category) if category is not None else None
-    )
-    category_id = uuid4() if category_exist is None else category_exist.id
+    category_data = make_category_data(category, db)
     new_binding = Binding(
-        id=binding_id, category_id=category_id, audio_id=binding_id, text_id=binding_id
-    )
-    new_category = (
-        Category(id=category_id, name=category) if category is not None else None
+        id=binding_id, category_id=None if category_data[0] is None else category_data[0].id, audio_id=binding_id, text_id=binding_id
     )
     try:
-
+        if category_data[1] == "NOT_EXISTS":
+            create_category(db=db, category=category_data[0])
         await post_new_audio(id=binding_id, file=audio, db=db, commit=False)
         await post_new_text(id=binding_id, text="", db=db, commit=False)
         create_new_binding(db=db, binding=new_binding)
-        if new_category is not None:
-            create_category(db=db, category=new_category)
         db.commit()
     except HTTPException as e:
         db.rollback()
