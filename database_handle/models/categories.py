@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from pydantic.types import UUID4
-from sqlalchemy import Column, String, Uuid
+from sqlalchemy import UUID, Column, String
 
 from ..database import Base
 
@@ -8,7 +8,7 @@ from ..database import Base
 class Category(Base):
     __tablename__ = "categories"
 
-    id = Column(Uuid, primary_key=True, index=True)
+    id = Column(UUID, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
 
 
