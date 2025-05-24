@@ -57,7 +57,7 @@ app.include_router(r_dashboard.router)
 
 @app.get("/")
 async def root():
-    return RedirectResponse("http://localhost:80/docs")
+    return RedirectResponse("http://localhost:3051/docs")
 
 
 print("Listeining")
