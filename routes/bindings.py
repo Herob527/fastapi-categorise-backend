@@ -28,7 +28,7 @@ from database_handle.queries.bindings import (
 )
 from database_handle.queries.categories import (
     create_category,
-    get_one_category,
+    get_one_category_by_name,
 )
 from routes.audios import post_new_audio
 from routes.texts import post_new_text
@@ -84,7 +84,7 @@ async def create_binding(
 ):
     binding_id = uuid4()
     category_exist = (
-        get_one_category(db=db, name=category) if category is not None else None
+        get_one_category_by_name(db=db, name=category) if category is not None else None
     )
     category_id = uuid4() if category_exist is None else category_exist.id
     new_binding = Binding(
