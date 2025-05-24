@@ -98,7 +98,10 @@ async def create_binding(
     binding_id = uuid4()
     category_data = make_category_data(category, db)
     new_binding = Binding(
-        id=binding_id, category_id=None if category_data[0] is None else category_data[0].id, audio_id=binding_id, text_id=binding_id
+        id=binding_id, category_id=category_id if category is not None else None, audio_id=binding_id, text_id=binding_id
+    )
+    new_category = (
+        Category(id=category_id, name=category) if category is not None else None
     )
     try:
         if category_data[1] == "NOT_EXISTS":
