@@ -32,7 +32,7 @@ async def get_dashboard(db: Session = Depends(get_db)):
     category_with_most_bindings = get_category_with_most_bindings(db)
     uncategorized_count = get_uncategorized_count(db)
     categorized_count = get_categorized_count(db)
-    total_audio_duration = get_total_audio_duration(db)
+    total_audio_duration = round(get_total_audio_duration(db), 2)
     filled_transcript_count = get_filled_transcript_count(db)
     empty_transcript_count = get_empty_transcript_count(db)
 
