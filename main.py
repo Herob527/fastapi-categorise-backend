@@ -23,6 +23,10 @@ from routes import (
     texts as r_texts,
 )
 
+from routes import (
+    dashboard as r_dashboard,
+)
+
 texts.Base.metadata.create_all(engine)
 audios.Base.metadata.create_all(engine)
 categories.Base.metadata.create_all(engine)
@@ -48,6 +52,7 @@ app.include_router(r_texts.router)
 app.include_router(r_audios.router)
 app.include_router(r_bindings.router)
 app.include_router(r_finalise.router)
+app.include_router(r_dashboard.router)
 
 
 @app.get("/")
