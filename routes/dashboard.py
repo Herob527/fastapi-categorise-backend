@@ -8,7 +8,6 @@ Create endpoint for dashboard
 - Attach categories amount
 - Attach audio total length
 - Attach categories grouped by amounts attached
-- Add maximum and minimum audio length
 """
 
 from fastapi import APIRouter
