@@ -12,6 +12,8 @@ Create endpoint for dashboard
 
 from fastapi import APIRouter
 
+__all__ = ["router"]
+
 router = APIRouter(
     tags=["Dashboard"],
     prefix="/dashboard",
