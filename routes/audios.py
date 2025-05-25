@@ -17,7 +17,7 @@ async def upload_audio(
     uuid: UUID4 = uuid4(),
     folder: str = "audio",
     db: Session = Depends(get_db)
-):
+) -> Audio:
     """Upload audio file to MinIO and save metadata to database"""
     try:
         if file.content_type is None:
@@ -74,17 +74,8 @@ async def upload_audio(
             frequency=frequency,
             audio_length=audio_length
         )
-        db.add(audio_record)
         
-        return {
-            "id": str(audio_record.id),
-            "url": audio_record.url,
-            "file_name": audio_record.file_name,
-            "channels": audio_record.channels,
-            "frequency": audio_record.frequency,
-            "audio_length": audio_record.audio_length,
-            "message": "Audio file uploaded successfully"
-        }
+        return audio_record
         
     except Exception as e:
         db.rollback()
