@@ -30,7 +30,7 @@ from database_handle.queries.categories import (
     create_category,
     get_one_category_by_name,
 )
-from routes.audios import post_new_audio
+from routes.audios import upload_audio
 from routes.texts import post_new_text
 
 __all__ = ["router"]
@@ -95,7 +95,7 @@ async def create_binding(
     )
     try:
 
-        await post_new_audio(id=binding_id, file=audio, db=db, commit=False)
+        await upload_audio(file=audio, uuid=binding_id, db=db)
         await post_new_text(id=binding_id, text="", db=db, commit=False)
         create_new_binding(db=db, binding=new_binding)
         if new_category is not None:
