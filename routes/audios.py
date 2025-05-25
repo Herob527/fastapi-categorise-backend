@@ -17,7 +17,7 @@ async def upload_audio(
     uuid: UUID4 = uuid4(),
     folder: str = "audio",
     db: Session = Depends(get_db)
-) -> Audio:
+) -> AudioModel:
     """Upload audio file to MinIO and save metadata to database"""
     try:
         if file.content_type is None:
@@ -35,7 +35,6 @@ async def upload_audio(
             content_type=file.content_type,
             folder=folder
         )
-        print(object_name)
         
         # Generate MinIO URL for the uploaded file
         file_url = f"http://{minio_service.endpoint}/{minio_service.bucket_name}/{object_name}"
@@ -75,7 +74,7 @@ async def upload_audio(
             audio_length=audio_length
         )
         
-        return audio_record
+        return AudioModel.from_orm(audio_record)
         
     except Exception as e:
         db.rollback()
