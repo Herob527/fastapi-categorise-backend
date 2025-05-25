@@ -32,7 +32,7 @@ from database_handle.queries.categories import (
     create_category,
     get_one_category_by_name,
 )
-from routes.audios import upload_audio
+from routes.audios import delete_audio, upload_audio
 from routes.texts import post_new_text
 
 __all__ = ["router"]
@@ -111,8 +111,9 @@ async def create_binding(
 
 
 @router.delete("/{binding_id}")
-def remove_binding(binding_id: UUID4, db: Session = Depends(get_db)):
+async def remove_binding(binding_id: UUID4, db: Session = Depends(get_db)):
     binding_remove(db, binding_id)
+    await delete_audio(binding_id, db)
     return {"hejo": binding_id}
 
 
