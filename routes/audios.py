@@ -11,7 +11,7 @@ from services.minio_service import minio_service
 
 router = APIRouter(prefix="/audio", tags=["audio"])
 
-@router.post("/upload")
+@router.post("/upload", response_model=AudioModel)
 async def upload_audio(
     file: UploadFile,
     uuid: UUID4 = uuid4(),
