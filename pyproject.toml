@@ -15,3 +15,4 @@ aiosqlite = "^0.20.0"
 python-multipart = "^0.0.9"
 pydantic = "^2.7.1"
 librosa = "^0.10.0.post2"
+psycopg = {extras = ["binary", "pool"], version = "^3.2.9"}
