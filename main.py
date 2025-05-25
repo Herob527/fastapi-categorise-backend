@@ -3,7 +3,6 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
 
 from database_handle.database import engine
 from database_handle.models import audios, bindings, categories, texts
@@ -46,7 +45,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 app.include_router(r_categories.router)
 app.include_router(r_texts.router)
 app.include_router(r_audios.router)
