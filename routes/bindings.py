@@ -1,4 +1,5 @@
 from typing import Annotated, List
+from asyncio import gather
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -94,9 +95,8 @@ async def create_binding(
         Category(id=category_id, name=category) if category is not None else None
     )
     try:
-
-        await upload_audio(file=audio, uuid=binding_id, db=db)
-        await post_new_text(id=binding_id, text="", db=db, commit=False)
+        returned_audio, _ = await gather(upload_audio(file=audio, uuid=binding_id, db=db), post_new_text(id=binding_id, text="", db=db, commit=False))
+        db.add(returned_audio)
         create_new_binding(db=db, binding=new_binding)
         if new_category is not None:
             create_category(db=db, category=new_category)
