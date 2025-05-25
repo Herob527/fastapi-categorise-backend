@@ -7,6 +7,7 @@ from pydantic.types import UUID4
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
+from database_handle.models.audios import Audio
 from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
 from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
@@ -96,7 +97,9 @@ async def create_binding(
     )
     try:
         returned_audio, _ = await gather(upload_audio(file=audio, uuid=binding_id, db=db), post_new_text(id=binding_id, text="", db=db, commit=False))
-        db.add(returned_audio)
+        db.add(Audio(
+            **returned_audio.model_dump()
+            ))
         create_new_binding(db=db, binding=new_binding)
         if new_category is not None:
             create_category(db=db, category=new_category)
