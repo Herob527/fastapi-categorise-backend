@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from database_handle.database import get_db
@@ -45,13 +46,13 @@ router = APIRouter(
 
 
 @router.get("/count")
-def get_count(db: Session = Depends(get_db)):
+async def get_count(db: AsyncSession= Depends(get_db)):
     return get_total_bindings(db) or 0
 
 
 @router.get("", response_model=PaginatedBindingModel)
-def get_paginated_bindings(
-    page: int = 0, per_page: int = 10, db: Session = Depends(get_db)
+async def get_paginated_bindings(
+    page: int = 0, per_page: int = 10, db: AsyncSession = Depends(get_db)
 ):
     if page < 0:
         raise HTTPException(
@@ -59,10 +60,10 @@ def get_paginated_bindings(
         )
     if per_page <= 0:
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
-    pagination = get_pagination(db)
+    pagination = await get_pagination(db)
 
     return PaginatedBindingModel(
-        bindings=paginated_bindings_query(page=page, limit=per_page, db=db),
+        bindings=(await paginated_bindings_query(page=page, limit=per_page, db=db)),
         page=page,
         pagination=pagination,
     )

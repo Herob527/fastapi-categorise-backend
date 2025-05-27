@@ -1,4 +1,6 @@
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio.engine import create_async_engine
+from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from os import environ
@@ -12,14 +14,20 @@ engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
 )
 
+async_engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL,
+)
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
+
+SessionLocalAsync = async_sessionmaker(bind=async_engine, autoflush=False)
 
 Base = declarative_base()
 
 
-def get_db():
-    db = SessionLocal()
+async def get_db():
+    db = SessionLocalAsync()
     try:
         yield db
     finally:
-        db.close()
+        await db.close()

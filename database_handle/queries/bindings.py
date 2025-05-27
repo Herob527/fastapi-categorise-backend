@@ -1,6 +1,8 @@
 from pydantic.types import UUID4
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.expression import delete, update
 
 from database_handle.models.audios import Audio
 from database_handle.models.bindings import Binding, PaginationModel
@@ -14,19 +16,23 @@ AudioAlias = aliased(Audio, name="audio")
 TextAlias = aliased(Text, name="text")
 
 
-def get_pagination(db: Session):
-    stmt = func.count(BindingAlias.id)
+async def get_pagination(db: AsyncSession):
+    stmt = select(func.count("*")).select_from(Binding)
 
-    result: int = db.execute(stmt).scalar() or 0
+    result= (await db.execute(stmt)).scalar() or 0
 
     return PaginationModel(total=result)
 
 
-def get_one_binding(db: Session, id: str):
-    return db.query(Binding).filter(Binding.id == id).first()
+async def get_one_binding(db: AsyncSession, id: str):
+    stmt = select(Binding).where(Binding.id == id)
+
+    result = (await db.execute(stmt)).first()
+
+    return result
 
 
-def get_all_bindings(db: Session, category_name: str | None = None):
+async def get_all_bindings(db: AsyncSession, category_name: str | None = None):
 
     stmt = (
         select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
@@ -38,41 +44,42 @@ def get_all_bindings(db: Session, category_name: str | None = None):
     if category_name:
         stmt = stmt.where(CategoryAlias.name == category_name)
 
-    result = db.execute(stmt).fetchall()
+    result = (await db.execute(stmt)).all()
 
     return result
 
 
-def get_paginated_bindings(db: Session, page: int = 0, limit: int = 20):
+async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 20):
     # Construct the select statement
     stmt = (
         select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
         .outerjoin(CategoryAlias)
         .join(AudioAlias)
         .join(TextAlias)
-    )
+    ).limit(limit).offset(page * limit).order_by(AudioAlias.file_name)
 
-    stmt = stmt.limit(limit).offset(page * limit).order_by(AudioAlias.file_name)
-    result = db.execute(stmt).fetchall()
+    result = (await db.execute(stmt)).all()
 
     return result
 
 
-def get_total_bindings(db: Session):
-    return db.query(Binding).count()
+async def get_total_bindings(db: AsyncSession):
+    stmt = select(func.count("*")).select_from(Binding)
+
+    result= (await db.execute(stmt)).scalar() or 0
+
+    return PaginationModel(total=result)
 
 
-def create_binding(db: Session, binding: Binding):
+async def create_binding(db: AsyncSession, binding: Binding):
     db.add(binding)
 
 
-def remove_binding(db: Session, id: UUID4):
-    db.query(Binding).filter(Binding.id == id).delete()
-    db.commit()
+async def remove_binding(db: AsyncSession, id: UUID4):
+    stmt = delete(Binding).where(Binding.id == id)
+    db.add(stmt)
 
 
-def update_binding_category(binding_id: UUID4, category_id: UUID4 | None, db: Session):
-    db.query(Binding).where(Binding.id == binding_id).update(
-        {"category_id": category_id}
-    )
-    db.commit()
+async def update_binding_category(binding_id: UUID4, category_id: UUID4 | None, db: AsyncSession):
+    stmt = update(Binding).where(Binding.id == binding_id).values(category_id=category_id)
+    db.add(stmt)
