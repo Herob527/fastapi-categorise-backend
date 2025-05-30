@@ -122,9 +122,7 @@ async def get_audio_url(
     audio_id: UUID4, expires: int = 3600, db: AsyncSession = Depends(get_db)
 ):
     """Get presigned URL for audio file access"""
-    audio_record = (
-        await db.execute(select(Audio).filter(Audio.id == audio_id))
-    ).first()
+    audio_record = await db.scalar(select(Audio).where(Audio.id == audio_id).limit(1))
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
