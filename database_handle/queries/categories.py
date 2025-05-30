@@ -1,39 +1,47 @@
-from sqlalchemy import Column
-from sqlalchemy.orm import Session
+from sqlalchemy import Column, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from pydantic import UUID4
+from sqlalchemy.sql.expression import func, select
 from database_handle.models.categories import Category
 
 
-def get_one_category(db: Session, id: Column[str] | str | UUID4) -> Category | None:
-    return db.query(Category).filter(Category.id == id).first()
-
-def get_one_category_by_name(db: Session, name: Column[str] | str) -> Category | None:
-    return db.query(Category).filter(Category.name == name).first()
-
-def get_categories_count(db: Session):
-    return db.query(Category).count()
+async def get_one_category(db: AsyncSession, id: Column[str] | str | UUID4):
+    entry = (await db.execute(select(Category).where(Category.id == id))).first()
+    return entry
 
 
-def get_all_categories(db: Session):
-    return db.query(Category).all()
+async def get_one_category_by_name(db: AsyncSession, name: Column[str] | str):
+    entry = (
+        await db.execute(select(Category).where(Category.name == name).limit(1))
+    ).first()
+    return entry
 
 
-def remove_category(db: Session, name: str):
-    db.query(Category).filter(Category.name == name).delete(synchronize_session=False)
-    db.commit()
+async def get_categories_count(db: AsyncSession):
+    count_func = func.count(Category.id)
+    entry = (await db.execute(select(count_func).select_from(Category))).scalar() or 0
+    return entry
 
 
-def create_category(db: Session, category: Category):
-    category_exists = get_one_category(db, id=category.id)
+async def get_all_categories(db: AsyncSession):
+    return (await db.scalars(select(Category))).all()
+
+
+async def remove_category(db: AsyncSession, name: str):
+    entry = (await db.execute(select(Category).where(Category.name == name))).first()
+    if entry is None:
+        raise Exception("Category not found")
+    await db.delete(entry)
+
+
+async def create_category(db: AsyncSession, category: Category):
+    category_exists = await get_one_category(db, id=category.id)
     if category_exists:
         return
     db.add(category)
-    db.commit()
 
 
-def update_category(db: Session, category: Category):
-    db.query(Category).filter(Category.id == category.id).update(
-            {"name": category.name, "id": category.id}, synchronize_session=False
-    )
-    db.commit()
+async def update_category(db: AsyncSession, category: Category):
+    stmt = update(Category).where(Category.id == category.id).values(name=category.name)
+    await db.execute(stmt)

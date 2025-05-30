@@ -1,28 +1,13 @@
-from pydantic import UUID4
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio.session import AsyncSession
+from sqlalchemy.sql.expression import update
 
 from database_handle.models.texts import Text
 
 
-def get_one_text(db: Session, id: UUID4):
-    return db.query(Text).filter(Text.id == id).first()
+async def update_text(db: AsyncSession, text: Text):
+    stmt = update(Text).where(Text.id == text.id).values(text=text.text)
+    await db.execute(stmt)
 
 
-def get_all_texts(db: Session):
-    return db.query(Text).all()
-
-
-def update_text(db: Session, text: Text):
-    db.query(Text).filter(Text.id == text.id).update(
-        {"text": text.text, "id": text.id}, synchronize_session="evaluate"
-    )
-    db.commit()
-
-
-def remove_text(db: Session, id: str):
-    db.query(Text).filter(Text.id == id).delete()
-    db.commit()
-
-
-def create_text(db: Session, text: Text):
+async def create_text(db: AsyncSession, text: Text):
     db.add(text)

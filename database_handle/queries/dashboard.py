@@ -1,57 +1,76 @@
-from sqlalchemy import  func
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.models.audios import Audio
 from database_handle.models.bindings import Binding
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 
-from sqlalchemy.orm import Session
 
-def get_categories_count(session: Session) -> int:
-    return session.query(func.count(Category.id)).scalar()
+async def get_categories_count(session: AsyncSession):
+    result = await session.scalar(select(func.count(Category.id)))
+    return result
 
-def get_total_bindings_count(session: Session) -> int:
-    return session.query(func.count(Binding.id)).scalar()
 
-def get_category_with_most_bindings(session: Session) -> tuple[str, int]:
+async def get_total_bindings_count(session: AsyncSession):
+    result = await session.scalar(select(func.count(Binding.id)))
+    return result
+
+
+async def get_category_with_most_bindings(session: AsyncSession):
     subquery = (
-        session.query(
-            Category.name,
-            func.count(Binding.id).label("bindings_count")
-        )
+        select(Category.name, func.count(Binding.id).label("bindings_count"))
+        .select_from(Category)
         .join(Binding, Binding.category_id == Category.id)
         .group_by(Category.id)
         .subquery()
     )
 
-    result = session.query(subquery.c.name, subquery.c.bindings_count).order_by(subquery.c.bindings_count.desc()).first()
+    result = (
+        await session.execute(
+            select(subquery.c.name, subquery.c.bindings_count)
+            .order_by(subquery.c.bindings_count.desc())
+            .limit(1)
+        )
+    ).first()
 
-    if result is None:
-        return ("", 0)
-    
-    return (str(result[0]), int(result[1]))
+    return (str(result[0]) if result else "", 0)
 
-def get_uncategorized_count(session: Session) -> int:
-    return session.query(func.count(Binding.id)).filter(Binding.category_id.is_(None)).scalar()
 
-def get_categorized_count(session: Session) -> int:
-    return session.query(func.count(Binding.id)).filter(Binding.category_id.is_not(None)).scalar()
+async def get_uncategorized_count(session: AsyncSession):
+    result = await session.scalar(
+        select(func.count(Binding.id)).filter(Binding.category_id.is_(None))
+    )
+    return result
 
-def get_total_audio_duration(session: Session) -> float:
-    return session.query(func.sum(Audio.audio_length)).scalar() or 0.0
 
-def get_filled_transcript_count(session: Session) -> int:
-    return (
-        session.query(func.count(Text.id))
+async def get_categorized_count(session: AsyncSession):
+    result = await session.scalar(
+        select(func.count(Binding.id)).filter(Binding.category_id.is_not(None))
+    )
+    return result
+
+
+async def get_total_audio_duration(session: AsyncSession):
+    result = await session.scalar(select(func.sum(Audio.audio_length)))
+    return float(result or 0.0)
+
+
+async def get_filled_transcript_count(session: AsyncSession):
+    result = await session.scalar(
+        select(func.count(Text.id))
+        .select_from(Text)
         .join(Binding, Binding.text_id == Text.id)
         .filter(func.trim(Text.text) != "")
-        .scalar()
     )
+    return result
 
-def get_empty_transcript_count(session: Session) -> int:
-    return (
-        session.query(func.count(Text.id))
+
+async def get_empty_transcript_count(session: AsyncSession):
+    result = await session.scalar(
+        select(func.count(Text.id))
+        .select_from(Text)
         .join(Binding, Binding.text_id == Text.id)
         .filter(func.trim(Text.text) == "")
-        .scalar()
     )
+    return result

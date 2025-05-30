@@ -8,7 +8,7 @@ from typing import Dict, List, Literal, Tuple, TypedDict, Union
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import Row
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
@@ -228,10 +228,10 @@ def convert_tree_to_pydantic(root: Path):
 
 
 @router.post("/", response_model=DirectoryModel)
-def finalise(config: FinaliseConfigModel, db: Session = Depends(get_db)):
+async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
     rmtree(output_dir, ignore_errors=True)
     output_dir.mkdir()
-    bindings = get_all_bindings(db)
+    bindings = await get_all_bindings(db)
     categories = set(
         map(
             lambda x: x.replace(" ", config.category_space_replacer),
