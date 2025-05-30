@@ -82,7 +82,7 @@ async def create_binding(db: AsyncSession, binding: Binding):
 
 async def remove_binding(db: AsyncSession, id: UUID4):
     stmt = delete(Binding).where(Binding.id == id)
-    db.add(stmt)
+    await db.execute(stmt)
 
 
 async def update_binding_category(
