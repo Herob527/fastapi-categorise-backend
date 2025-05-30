@@ -142,9 +142,7 @@ async def get_audio_url(
 @router.delete("/{audio_id}")
 async def delete_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
     """Delete audio file from both MinIO and database"""
-    audio_record = (
-        await db.execute(select(Audio).where(Audio.id == audio_id).limit(1))
-    ).first()
+    audio_record = await db.scalar(select(Audio).where(Audio.id == audio_id).limit(1))
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
