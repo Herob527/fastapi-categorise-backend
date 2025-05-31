@@ -77,7 +77,7 @@ async def upload_audio(
         # Save metadata to database with your existing Audio model
         audio_record = Audio(
             id=uuid,
-            url=file_url,
+            url=object_name,
             file_name=file.filename,
             channels=channels,
             frequency=frequency,
@@ -103,7 +103,7 @@ async def download_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
 
     # Extract object name from URL
     # URL format: http://minio:9000/{bucket}/{object_name}
-    object_name = audio_record.url.split(f"{minio_service.bucket_name}/")[-1]
+    object_name = str(audio_record.url)
 
     # Download from MinIO
     file_data = await minio_service.download_file(object_name)
