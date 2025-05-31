@@ -5,7 +5,12 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import delete, update
 
 from database_handle.models.audios import Audio
-from database_handle.models.bindings import Binding, PaginationModel
+from database_handle.models.bindings import (
+    Binding,
+    BindingEntry,
+    BindingModel,
+    PaginationModel,
+)
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 
@@ -19,17 +24,9 @@ TextAlias = aliased(Text, name="text")
 async def get_pagination(db: AsyncSession):
     stmt = select(func.count("*")).select_from(Binding)
 
-    result = (await db.execute(stmt)).scalar() or 0
+    result = (await db.scalar(stmt)) or 0
 
     return PaginationModel(total=result)
-
-
-async def get_one_binding(db: AsyncSession, id: str):
-    stmt = select(Binding).where(Binding.id == id)
-
-    result = (await db.execute(stmt)).first()
-
-    return result
 
 
 async def get_all_bindings(db: AsyncSession, category_name: str | None = None):
@@ -46,7 +43,20 @@ async def get_all_bindings(db: AsyncSession, category_name: str | None = None):
 
     result = (await db.execute(stmt)).all()
 
-    return result
+    return [
+        BindingModel(
+            binding=BindingEntry(
+                id=row[0].id,
+                category_id=row[0].category_id,
+                audio_id=row[0].audio_id,
+                text_id=row[0].text_id,
+            ),
+            category=row[1] if row[1] is not None else None,
+            audio=row[2],
+            text=row[3],
+        )
+        for row in result
+    ]
 
 
 async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 20):
@@ -65,13 +75,27 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
 
     result = (await db.execute(stmt)).all()
 
-    return [*result]
+    # Convert each row to BindingModel
+    return [
+        BindingModel(
+            binding=BindingEntry(
+                id=row[0].id,
+                category_id=row[0].category_id,
+                audio_id=row[0].audio_id,
+                text_id=row[0].text_id,
+            ),
+            category=row[1] if row[1] is not None else None,
+            audio=row[2],
+            text=row[3],
+        )
+        for row in result
+    ]
 
 
 async def get_total_bindings(db: AsyncSession):
     stmt = select(func.count("*")).select_from(Binding)
 
-    result = (await db.execute(stmt)).scalar() or 0
+    result = (await db.scalar(stmt)) or 0
 
     return PaginationModel(total=result)
 
