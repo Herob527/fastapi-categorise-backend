@@ -12,9 +12,7 @@ async def get_one_category(db: AsyncSession, id: Column[str] | str | UUID4):
 
 
 async def get_one_category_by_name(db: AsyncSession, name: Column[str] | str):
-    entry = (
-        await db.execute(select(Category).where(Category.name == name).limit(1))
-    ).first()
+    entry = await db.scalar(select(Category).where(Category.name == name).limit(1))
     return entry
 
 
