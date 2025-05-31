@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
-from database_handle.models.bindings import Binding
+from database_handle.models.bindings import Binding, BindingModel
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 from database_handle.queries.bindings import get_all_bindings
@@ -108,17 +108,17 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-type BindingEntry = Row[Tuple[Binding, Category, Audio, Text]]
 
-
-def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
-    _, category, audio, text = _binding.tuple()
-
+def process_path(binding: BindingModel, config: FinaliseConfigModel):
     target_dir = (
         Path(
             output_dir,
             process_category(
-                str(category.name) if category is not None else config.uncaterized_name,
+                (
+                    str(binding.category.name)
+                    if binding.category is not None
+                    else config.uncaterized_name
+                ),
                 config,
             ),
         )
@@ -126,10 +126,10 @@ def process_path(_binding: BindingEntry, config: FinaliseConfigModel):
         else Path(output_dir)
     )
 
-    output_file = Path(target_dir, "wavs", str(audio.file_name))
-    source_file = Path(str(audio.url))
+    output_file = Path(target_dir, "wavs", binding.audio.file_name)
+    source_file = Path(binding.audio.url)
 
-    if config.omit_empty and str(text.text).strip() == "":
+    if config.omit_empty and binding.text.text.strip() == "":
         return []
 
     return [source_file, output_file]
@@ -148,24 +148,30 @@ def process_category(category: str, config: FinaliseConfigModel):
 
 
 def process_line(
-    binding: BindingEntry,
+    binding: BindingModel,
     config: FinaliseConfigModel,
     indexed_categories: Dict[str, int] | None = None,
 ):
-    _, category, audio, text = binding.tuple()
     category_index = (
         indexed_categories.get(
-            str(category.name) if category is not None else config.uncaterized_name
+            binding.category.name
+            if binding.category is not None
+            else config.uncaterized_name
         )
         if indexed_categories
         else 0
     )
     formatted_line = config.line_format.format(
-        file=audio.file_name,
-        text=text.text if str(text.text).strip() != "" else EMPTY_TEXT_TAG,
-        duration=audio.audio_length,
+        file=binding.audio.file_name,
+        text=(
+            binding.text.text
+            if str(binding.text.text).strip() != ""
+            else EMPTY_TEXT_TAG
+        ),
+        duration=binding.audio.audio_length,
         category=process_category(
-            str(category.name if category else config.uncaterized_name), config
+            str(binding.category.name if binding.category else config.uncaterized_name),
+            config,
         ),
         category_index=category_index,
     )
@@ -173,20 +179,19 @@ def process_line(
 
 
 def process_transcript(
-    bindings: Sequence[BindingEntry],
+    bindings: list[BindingModel],
     config: FinaliseConfigModel,
     indexed_categories: Dict[str, int] | None = None,
 ):
     res: Dict[str, TranscriptEntry] = dict()
     for binding in bindings:
-        _, category, _, _ = binding.tuple()
         target_dir = (
             Path(
                 output_dir,
                 process_category(
                     (
-                        str(category.name)
-                        if category is not None
+                        str(binding.category.name)
+                        if binding.category is not None
                         else config.uncaterized_name
                     ),
                     config,
@@ -198,7 +203,9 @@ def process_transcript(
 
         output_file = Path(target_dir, "transcript.txt")
         current_category = (
-            str(category.name) if category is not None else config.uncaterized_name
+            str(binding.category.name)
+            if binding.category is not None
+            else config.uncaterized_name
         )
 
         current_value = res.get(current_category)
@@ -239,38 +246,38 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
                 lambda x: x.lower() if config.category_to_lower else x,
                 map(
                     lambda x: (
-                        str(x.tuple()[1].name)
-                        if x.tuple()[1]
-                        else config.uncaterized_name
+                        x.category.name if x.category else config.uncaterized_name
                     ),
                     bindings,
                 ),
             ),
         )
     )
-    audio_paths = filter(
-        lambda x: len(x) == 2, map(lambda x: process_path(x, config), bindings)
-    )
+    # TODO: Adjust finalise to use minio instead of local storage
 
-    indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
-
-    transcript_data = process_transcript(bindings, config, indexed_categories)
-    used_category = categories if config.divide_by_category else []
-    for category in used_category:
-        prepare_path(category)
-    if len(used_category) == 0:
-        Path(output_dir, "wavs").mkdir(parents=True, exist_ok=True)
-
-    for audio_path in audio_paths:
-        copy_file(str(audio_path[0]), str(audio_path[1]))
-
-    if config.export_transcript:
-        for data in transcript_data:
-            write_transcript(
-                data["lines"],
-                str(data["path"]),
-                lambda x: x.find(EMPTY_TEXT_TAG) == -1 if config.omit_empty else True,
-                lambda x: x.replace(EMPTY_TEXT_TAG, ""),
-            )
+    # audio_paths = map(lambda x: x.audio.url , bindings)
+    #
+    # indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
+    #
+    # transcript_data = process_transcript(bindings, config, indexed_categories)
+    # used_category = categories if config.divide_by_category else []
+    # for category in used_category:
+    #     prepare_path(category)
+    #
+    # if len(used_category) == 0:
+    #     Path(output_dir, "wavs").mkdir(parents=True, exist_ok=True)
+    #
+    # for audio_path in audio_paths:
+    #     download
+    #     copy_file(str(audio_path[0]), str(audio_path[1]))
+    #
+    # if config.export_transcript:
+    #     for data in transcript_data:
+    #         write_transcript(
+    #             data["lines"],
+    #             str(data["path"]),
+    #             lambda x: x.find(EMPTY_TEXT_TAG) == -1 if config.omit_empty else True,
+    #             lambda x: x.replace(EMPTY_TEXT_TAG, ""),
+    #         )
     converted_tree = convert_tree_to_pydantic(output_dir)
     return converted_tree
