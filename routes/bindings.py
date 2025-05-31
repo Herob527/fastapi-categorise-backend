@@ -17,7 +17,6 @@ from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
 )
 from database_handle.queries.bindings import (
-    get_one_binding,
     get_pagination,
     get_total_bindings,
     update_binding_category,
@@ -74,11 +73,6 @@ async def get_all_bindings(
     db: AsyncSession = Depends(get_db), category: str | None = None
 ):
     return all_bindings_query(db, category)
-
-
-@router.get("/{binding_id}", response_model=BindingModel)
-async def get_binding(binding_id: str, db: AsyncSession = Depends(get_db)):
-    return get_one_binding(db, binding_id)
 
 
 @router.post("")
