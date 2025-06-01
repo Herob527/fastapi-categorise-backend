@@ -98,13 +98,13 @@ async def create_binding(
         Category(id=category_id, name=category) if category is not None else None
     )
     try:
+        if new_category is not None:
+            await create_category(db=db, category=new_category)
         new_text = Text(id=binding_id, text="")
         db.add(new_text)
         returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
         db.add(Audio(**returned_audio.model_dump()))
         await create_new_binding(db=db, binding=new_binding)
-        if new_category is not None:
-            await create_category(db=db, category=new_category)
         await db.commit()
     except HTTPException as e:
         await db.rollback()
