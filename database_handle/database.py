@@ -1,10 +1,10 @@
-import asyncio
+import contextlib
+from typing import Any, AsyncIterator
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import async_scoped_session
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession
 from sqlalchemy.ext.asyncio.engine import create_async_engine
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from os import environ
 
 SQLALCHEMY_DATABASE_URL = environ.get("SQLALCHEMY_DATABASE_URL")
@@ -25,12 +25,49 @@ SessionLocalAsync = async_sessionmaker(bind=async_engine, autoflush=False)
 Base = declarative_base()
 
 
+class DatabaseSessionManager:
+    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
+        self._engine = create_async_engine(host, **engine_kwargs)
+        self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine)
+
+    async def close(self):
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+        await self._engine.dispose()
+
+        self._engine = None
+        self._sessionmaker = None
+
+    @contextlib.asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        async with self._engine.begin() as connection:
+            try:
+                yield connection
+            except Exception:
+                await connection.rollback()
+                raise
+
+    @contextlib.asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        if self._sessionmaker is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        session = self._sessionmaker()
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+sessionmanager = DatabaseSessionManager(SQLALCHEMY_DATABASE_URL)
+
+
 async def get_db():
-    db = async_scoped_session(
-        async_sessionmaker(bind=async_engine, autoflush=False),
-        lambda: asyncio.current_task(),
-    )
-    try:
-        yield db
-    finally:
-        await db.close()
+    async with sessionmanager.session() as session:
+        yield session
