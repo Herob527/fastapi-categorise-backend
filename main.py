@@ -30,10 +30,8 @@ texts.Base.metadata.create_all(engine)
 audios.Base.metadata.create_all(engine)
 categories.Base.metadata.create_all(engine)
 bindings.Base.metadata.create_all(engine)
-origins = "https?://localhost:.+"
 
-static_path = Path("audios")
-static_path.mkdir(exist_ok=True)
+origins = "https?://localhost:.+"
 
 app = FastAPI()
 # Dependency
