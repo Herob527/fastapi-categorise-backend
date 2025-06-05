@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from os import environ
 
+from sqlalchemy.orm.decl_api import DeclarativeBase
+
 SQLALCHEMY_DATABASE_URL = environ.get("SQLALCHEMY_DATABASE_URL")
 
 if not SQLALCHEMY_DATABASE_URL:
@@ -22,7 +24,7 @@ async_engine = create_async_engine(
 
 SessionLocalAsync = async_sessionmaker(bind=async_engine, autoflush=False)
 
-Base = declarative_base()
+Base: DeclarativeBase = declarative_base()
 
 
 class DatabaseSessionManager:
