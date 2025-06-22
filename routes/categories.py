@@ -31,14 +31,14 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[CategoryModel])
+@router.get("/", response_model=List[CategoryModel])
 async def get_all_categories(db: AsyncSession = Depends(get_db)):
     data = await all_categories_query(db)
     print(data)
     return data
 
 
-@router.post("")
+@router.post("/")
 async def post_new_category(
     id: UUID4 | None = None, category: str = Form(), db: AsyncSession = Depends(get_db)
 ) -> None:

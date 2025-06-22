@@ -118,8 +118,8 @@ async def download_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/download/{audio_id}/url")
-async def downlad_url(object_name: str):
-    return await minio_service.get_file_url(object_name)
+async def download_url(audio_id: str):
+    return await minio_service.get_file_url(audio_id)
 
 
 @router.get("/url/{audio_id}")
