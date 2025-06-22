@@ -34,14 +34,6 @@ bindings.Base.metadata.create_all(engine)
 origins = "https?://localhost:.+"
 
 app = FastAPI()
-# Dependency
-app.add_middleware(
-    CORSMiddleware,
-    allow_origin_regex=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.include_router(r_categories.router)
 app.include_router(r_texts.router)
