@@ -66,8 +66,6 @@ async def upload_audio(
             import soundfile as sf
 
             info = sf.info(temp_file_path)
-            channels = info.channels
-            frequency = info.samplerate
         finally:
             # Clean up temporary file
             import os
@@ -79,8 +77,6 @@ async def upload_audio(
             id=uuid,
             url=object_name,
             file_name=file.filename,
-            channels=channels,
-            frequency=frequency,
             audio_length=audio_length,
         )
 
