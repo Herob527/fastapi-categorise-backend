@@ -72,7 +72,7 @@ async def get_paginated_bindings(
 async def get_all_bindings(
     db: AsyncSession = Depends(get_db), category: str | None = None
 ):
-    return all_bindings_query(db, category)
+    return await all_bindings_query(db, category)
 
 
 @router.post("")
