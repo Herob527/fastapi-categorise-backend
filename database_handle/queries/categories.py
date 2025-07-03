@@ -27,7 +27,8 @@ async def get_all_categories(db: AsyncSession):
 
 
 async def remove_category(db: AsyncSession, name: str):
-    entry = (await db.execute(select(Category).where(Category.name == name))).first()
+    query = select(Category).where(Category.name == name).limit(1)
+    entry = (await db.scalars(query)).first()
     if entry is None:
         raise Exception("Category not found")
     await db.delete(entry)
