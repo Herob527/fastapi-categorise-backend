@@ -41,8 +41,8 @@ class DirectoryModel(BaseModel):
         file_name = file.name
         path_part = file.parts[level]
         files_container = self.files if dir is None else dir.files
-        if path_part.endswith((".wav", ".txt")) and dir is not None:
-            self._append(dir, FileModel(file_name=file_name, is_dir=False))
+        if path_part.endswith((".wav", ".txt")):
+            self._append(dir or self, FileModel(file_name=file_name, is_dir=False))
             return
 
         def dirs_on_level():
