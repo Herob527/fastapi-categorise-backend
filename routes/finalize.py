@@ -1,10 +1,9 @@
 from __future__ import annotations
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from pprint import pprint
 import re
 from shutil import copy2
-from typing import Dict, List, Literal, Optional, TypedDict, Union
+from typing import Dict, List, Literal, TypedDict, Union, cast
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
@@ -46,8 +45,12 @@ class DirectoryModel(BaseModel):
             self._append(dir, FileModel(file_name=file_name, is_dir=False))
             return
 
-        def dirs_on_level():
-            return filter(lambda x: isinstance(x, DirectoryModel), files_container)
+        def dirs_on_level() -> Iterator[DirectoryModel]:
+            return (
+                cast(DirectoryModel, x)
+                for x in files_container
+                if isinstance(x, DirectoryModel)
+            )
 
         def dir_names_on_level():
             return map(lambda x: x.dir_name, dirs_on_level())
@@ -291,11 +294,14 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
     indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
     transcript_data = process_transcript(bindings, config, indexed_categories)
+
     for i in transcript_data:
         lines = "".join(i["lines"])
         path = i["path"]
         service.append_to_text(str(path), lines)
+
     base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
+
     for item in service.list_files("temp"):
         base_dir.append(Path(item.replace("temp/", "")))
 
