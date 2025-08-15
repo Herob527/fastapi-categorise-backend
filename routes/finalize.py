@@ -1,5 +1,4 @@
 from __future__ import annotations
-import concurrent.futures
 import asyncio
 from os import cpu_count
 import re
@@ -13,7 +12,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.queries.bindings import get_all_bindings
-from services.minio_service import minio_service
+from services import minio_service
 
 __all__ = ["router"]
 
@@ -215,7 +214,7 @@ def convert_tree_to_pydantic(root: Path):
 @router.post("/", response_model=DirectoryModel)
 async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
-    service = minio_service
+    service = minio_service.minio_service
     await service.remove_dir(str(output_dir))
 
     def get_paths():
@@ -275,4 +274,4 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
 
 @router.get("/{object_id}", response_model=str)
 async def get_dir(object_id: str):
-    return await minio_service.get_file_url(object_id)
+    return await minio_service.minio_service.get_file_url(object_id)
