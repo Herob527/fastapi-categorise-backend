@@ -41,7 +41,10 @@ class MinIOService:
     async def remove_dir(self, dir: str):
         try:
             files = await asyncio.to_thread(lambda: self.list_files(dir))
-            await asyncio.gather(*[self.delete_file(file) for file in files])
+            file_names = [
+                file.object_name for file in files if file.object_name is not None
+            ]
+            await asyncio.gather(*[self.delete_file(file) for file in file_names])
 
             print(f"Removed bucket: {self.bucket_name}")
         except S3Error as e:
