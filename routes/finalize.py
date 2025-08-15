@@ -1,4 +1,6 @@
 from __future__ import annotations
+import concurrent.futures
+import asyncio
 import re
 from pathlib import Path
 from typing import Dict, List, Literal, TypedDict, Union, cast
@@ -213,7 +215,7 @@ def convert_tree_to_pydantic(root: Path):
 async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
     service = minio_service.minio_service
-    service.remove_dir(str(output_dir))
+    await service.remove_dir(str(output_dir))
 
     def get_paths():
         for b in bindings:
@@ -231,8 +233,15 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
 
             yield (b.audio.url, Path(subdir, b.audio.file_name))
 
-    for url, subdir in get_paths():
-        service.copy_file(url, str(subdir))
+    async def perform_copy():
+        tasks = []
+
+        for url, subdir in get_paths():
+            tasks.append(service.copy_file(url, str(subdir)))
+
+        await asyncio.gather(*tasks)
+
+    await perform_copy()
 
     categories = set(
         map(
