@@ -234,12 +234,15 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
             yield (b.audio.url, Path(subdir, b.audio.file_name))
 
     async def perform_copy():
-        tasks = []
+        sem = asyncio.Semaphore(20)  # Allow up to 20 concurrent copies
 
-        for url, subdir in get_paths():
-            tasks.append(service.copy_file(url, str(subdir)))
+        async def limited_copy(url, subdir):
+            async with sem:
+                await service.copy_file(url, str(subdir))
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(
+            *(limited_copy(url, subdir) for url, subdir in get_paths())
+        )
 
     await perform_copy()
 
