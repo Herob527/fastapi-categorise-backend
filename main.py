@@ -1,9 +1,5 @@
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-
 from database_handle.database import engine
 from database_handle.models import audios, bindings, categories, texts
 from routes import (
