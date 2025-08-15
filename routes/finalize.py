@@ -47,13 +47,10 @@ class DirectoryModel(BaseModel):
             return
 
         def dirs_on_level():
-            return filter(
-                lambda x: x is not None,
-                map(lambda x: x if x.is_dir else None, files_container),
-            )
+            return filter(lambda x: isinstance(x, DirectoryModel), files_container)
 
         def dir_names_on_level():
-            return map(lambda x: x.dir_name if x.is_dir else None, files_container)
+            return map(lambda x: x.dir_name, dirs_on_level())
 
         if path_part not in dir_names_on_level():
             files_container.append(
@@ -64,8 +61,6 @@ class DirectoryModel(BaseModel):
             if i.dir_name == path_part:
                 self.append(file, level + 1, i)
                 break
-
-        # parts = [Path(i) for i in file.parts]
 
 
 DirectoryModel.model_rebuild()
