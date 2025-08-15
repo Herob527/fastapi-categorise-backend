@@ -1,8 +1,6 @@
 from __future__ import annotations
-from collections.abc import Callable
-from pathlib import Path
 import re
-from shutil import copy2
+from pathlib import Path
 from typing import Dict, List, Literal, TypedDict, Union, cast
 
 from fastapi import APIRouter, Depends
@@ -86,7 +84,7 @@ class FinaliseConfigModel(BaseModel):
     category_to_lower: bool = False
     category_space_replacer: str = " "
     export_transcript: bool = True
-    uncaterized_name: str = "Uncategorized"
+    uncategorized_name: str
 
     @field_validator("line_format")
     def validate_line_format(cls, v):
@@ -103,64 +101,11 @@ class FinaliseConfigModel(BaseModel):
         return v
 
 
-def prepare_path(dir: str):
-    path = Path(output_dir, dir, "wavs")
-    path.mkdir(parents=True, exist_ok=True)
-
-
-def copy_file(
-    source_file: str,
-    target_file: str,
-):
-    copy2(source_file, target_file)
-
-
-def write_transcript(
-    lines: list[str],
-    filter_predicate: Callable[[str], bool] = lambda _: True,
-    post_processing: Callable[[str], str] = lambda x: x,
-):
-    """
-    params:
-        lines - list of lines
-        target_file - path to write lines
-        filter_predicate - filter out lines not matching criteria
-        post_processing - transform line before writing one
-    """
-    return map(post_processing, filter(filter_predicate, lines))
-
-
 router = APIRouter(
     tags=["Finalise"],
     prefix="/finalise",
     responses={404: {"description": "Not found"}},
 )
-
-
-def process_path(binding: BindingModel, config: FinaliseConfigModel):
-    target_dir = (
-        Path(
-            output_dir,
-            process_category(
-                (
-                    str(binding.category.name)
-                    if binding.category is not None
-                    else config.uncaterized_name
-                ),
-                config,
-            ),
-        )
-        if config.divide_by_category
-        else Path(output_dir)
-    )
-
-    output_file = Path(target_dir, "wavs", binding.audio.file_name)
-    source_file = Path(binding.audio.url)
-
-    if config.omit_empty and binding.text.text.strip() == "":
-        return []
-
-    return [source_file, output_file]
 
 
 class TranscriptEntry(TypedDict):
@@ -184,7 +129,7 @@ def process_line(
         indexed_categories.get(
             binding.category.name
             if binding.category is not None
-            else config.uncaterized_name
+            else config.uncategorized_name
         )
         if indexed_categories
         else 0
@@ -198,7 +143,9 @@ def process_line(
         ),
         duration=binding.audio.audio_length,
         category=process_category(
-            str(binding.category.name if binding.category else config.uncaterized_name),
+            str(
+                binding.category.name if binding.category else config.uncategorized_name
+            ),
             config,
         ),
         category_index=category_index,
@@ -220,7 +167,7 @@ def process_transcript(
                     (
                         str(binding.category.name)
                         if binding.category is not None
-                        else config.uncaterized_name
+                        else config.uncategorized_name
                     ),
                     config,
                 ),
@@ -233,7 +180,7 @@ def process_transcript(
         current_category = (
             str(binding.category.name)
             if binding.category is not None
-            else config.uncaterized_name
+            else config.uncategorized_name
         )
 
         current_value = res.get(current_category)
@@ -275,7 +222,7 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
         if config.divide_by_category:
             subdir = Path(
                 subdir,
-                b.category.name if b.category else config.uncaterized_name,
+                b.category.name if b.category else config.uncategorized_name,
                 "files",
             )
         else:
@@ -286,7 +233,7 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
 
     categories = set(
         map(
-            lambda x: x.category.name if x.category else config.uncaterized_name,
+            lambda x: x.category.name if x.category else config.uncategorized_name,
             bindings,
         )
     )
