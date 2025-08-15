@@ -271,3 +271,8 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
             base_dir.append(Path(item.object_name.replace("temp/", "")))
 
     return base_dir
+
+
+@router.get("/{object_id}", response_model=str)
+async def get_dir(object_id: str):
+    return await minio_service.get_file_url(object_id)
