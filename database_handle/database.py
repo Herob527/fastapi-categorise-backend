@@ -18,11 +18,6 @@ engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
 )
 
-async_engine = create_async_engine(
-    SQLALCHEMY_DATABASE_URL, pool_size=20, max_overflow=10
-)
-
-SessionLocalAsync = async_sessionmaker(bind=async_engine, autoflush=False)
 
 Base: DeclarativeBase = declarative_base()
 
