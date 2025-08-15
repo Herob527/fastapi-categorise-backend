@@ -1,6 +1,8 @@
+import io
 import os
 from typing import BinaryIO
 from minio import Minio
+from minio.commonconfig import CopySource
 from minio.error import S3Error
 from fastapi import HTTPException
 import uuid
@@ -34,6 +36,38 @@ class MinIOService:
         except S3Error as e:
             print(f"Error creating bucket: {e}")
             raise HTTPException(status_code=500, detail="Failed to initialize storage")
+
+    def remove_dir(self, dir: str):
+        try:
+            files = self.list_files(dir)
+            for file in files:
+                self.delete_file(file)
+
+            print(f"Removed bucket: {self.bucket_name}")
+        except S3Error as e:
+            print(f"Error removing bucket: {e}")
+            raise HTTPException(status_code=500, detail="Failed to remove bucket")
+
+    def append_to_text(self, object_name: str, text: str):
+        try:
+            self.client.put_object(
+                self.bucket_name, object_name, io.BytesIO(text.encode()), len(text)
+            )
+        except S3Error as e:
+            print(f"Error appending text: {e}")
+            raise HTTPException(status_code=500, detail="Failed to append text")
+
+    def copy_file(self, source_object_name: str, destination_object_name: str):
+        copy_source = CopySource(self.bucket_name, source_object_name)
+        try:
+            self.client.copy_object(
+                bucket_name=self.bucket_name,
+                object_name=destination_object_name,
+                source=copy_source,
+            )
+        except S3Error as e:
+            print(f"Error copying file: {e}")
+            raise HTTPException(status_code=500, detail="Failed to copy file")
 
     async def upload_file(
         self,
