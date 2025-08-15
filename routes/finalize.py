@@ -1,5 +1,5 @@
 from __future__ import annotations
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
 import re
 from shutil import copy2
@@ -45,7 +45,7 @@ class DirectoryModel(BaseModel):
             self._append(dir, FileModel(file_name=file_name, is_dir=False))
             return
 
-        def dirs_on_level() -> Iterator[DirectoryModel]:
+        def dirs_on_level():
             return (
                 cast(DirectoryModel, x)
                 for x in files_container
