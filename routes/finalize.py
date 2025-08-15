@@ -264,6 +264,7 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
     base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
 
     for item in service.list_files("temp"):
-        base_dir.append(Path(item.replace("temp/", "")))
+        if item.object_name is not None:
+            base_dir.append(Path(item.object_name.replace("temp/", "")))
 
     return base_dir
