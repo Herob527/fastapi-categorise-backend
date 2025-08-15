@@ -1,4 +1,5 @@
 import io
+import asyncio
 import os
 from typing import BinaryIO
 from minio import Minio
@@ -37,11 +38,10 @@ class MinIOService:
             print(f"Error creating bucket: {e}")
             raise HTTPException(status_code=500, detail="Failed to initialize storage")
 
-    def remove_dir(self, dir: str):
+    async def remove_dir(self, dir: str):
         try:
-            files = self.list_files(dir)
-            for file in files:
-                self.delete_file(file)
+            files = await asyncio.to_thread(lambda: self.list_files(dir))
+            asyncio.gather(*[self.delete_file(file) for file in files])
 
             print(f"Removed bucket: {self.bucket_name}")
         except S3Error as e:
@@ -57,13 +57,15 @@ class MinIOService:
             print(f"Error appending text: {e}")
             raise HTTPException(status_code=500, detail="Failed to append text")
 
-    def copy_file(self, source_object_name: str, destination_object_name: str):
+    async def copy_file(self, source_object_name: str, destination_object_name: str):
         copy_source = CopySource(self.bucket_name, source_object_name)
         try:
-            self.client.copy_object(
-                bucket_name=self.bucket_name,
-                object_name=destination_object_name,
-                source=copy_source,
+            await asyncio.to_thread(
+                lambda: self.client.copy_object(
+                    bucket_name=self.bucket_name,
+                    object_name=destination_object_name,
+                    source=copy_source,
+                )
             )
         except S3Error as e:
             print(f"Error copying file: {e}")
@@ -125,12 +127,14 @@ class MinIOService:
             print(f"Error downloading file: {e}")
             raise HTTPException(status_code=404, detail="File not found")
 
-    def delete_file(self, object_name: str) -> bool:
+    async def delete_file(self, object_name: str) -> bool:
         """
         Delete file from MinIO
         """
         try:
-            self.client.remove_object(self.bucket_name, object_name)
+            await asyncio.to_thread(
+                lambda: self.client.remove_object(self.bucket_name, object_name)
+            )
             return True
         except S3Error as e:
             print(f"Error deleting file: {e}")
