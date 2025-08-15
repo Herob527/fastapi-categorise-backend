@@ -155,7 +155,7 @@ class MinIOService:
             print(f"Error generating URL: {e}")
             raise HTTPException(status_code=500, detail="Failed to generate file URL")
 
-    def list_files(self, prefix: str = "") -> list:
+    def list_files(self, prefix: str = ""):
         """
         List files in bucket with optional prefix
         """
@@ -163,7 +163,7 @@ class MinIOService:
             objects = self.client.list_objects(
                 bucket_name=self.bucket_name, prefix=prefix, recursive=True
             )
-            return [obj.object_name for obj in objects]
+            return objects
         except S3Error as e:
             print(f"Error listing files: {e}")
             raise HTTPException(status_code=500, detail="Failed to list files")
