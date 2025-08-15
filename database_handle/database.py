@@ -18,7 +18,6 @@ engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
 )
 
-
 Base: DeclarativeBase = declarative_base()
 
 

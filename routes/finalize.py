@@ -282,7 +282,6 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
             subdir = Path(subdir, "files")
 
         subdir = Path(subdir, b.audio.file_name)
-
         service.copy_file(b.audio.url, str(subdir))
 
     categories = set(
