@@ -125,7 +125,7 @@ class MinIOService:
             print(f"Error downloading file: {e}")
             raise HTTPException(status_code=404, detail="File not found")
 
-    async def delete_file(self, object_name: str) -> bool:
+    def delete_file(self, object_name: str) -> bool:
         """
         Delete file from MinIO
         """
@@ -151,7 +151,7 @@ class MinIOService:
             print(f"Error generating URL: {e}")
             raise HTTPException(status_code=500, detail="Failed to generate file URL")
 
-    async def list_files(self, prefix: str = "") -> list:
+    def list_files(self, prefix: str = "") -> list:
         """
         List files in bucket with optional prefix
         """
