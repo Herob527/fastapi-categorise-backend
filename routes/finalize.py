@@ -1,26 +1,23 @@
 from __future__ import annotations
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from pathlib import Path
+from pprint import pprint
 import re
-from shutil import copy2, rmtree
-from typing import Dict, List, Literal, Tuple, TypedDict, Union
+from shutil import copy2
+from typing import Dict, List, Literal, Optional, TypedDict, Union
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import Row
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.database import get_db
-from database_handle.models.audios import Audio
-from database_handle.models.bindings import Binding, BindingModel
-from database_handle.models.categories import Category
-from database_handle.models.texts import Text
+from database_handle.models.bindings import BindingModel
 from database_handle.queries.bindings import get_all_bindings
+from services import minio_service
 
 __all__ = ["router"]
 
-output_dir = Path("output")
-
+output_dir = Path("temp")
 
 EMPTY_TEXT_TAG = "<empty-text>"
 
@@ -34,6 +31,41 @@ class DirectoryModel(BaseModel):
     dir_name: str
     is_dir: Literal[True]
     files: List[Union[FileModel, DirectoryModel]]
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    def _append(self, dir: DirectoryModel, file: FileModel):
+        dir.files.append(file)
+
+    def append(self, file: Path, level=0, dir: DirectoryModel | None = None):
+        file_name = file.name
+        path_part = file.parts[level]
+        files_container = self.files if dir is None else dir.files
+        if path_part.endswith((".wav", ".txt")) and dir is not None:
+            self._append(dir, FileModel(file_name=file_name, is_dir=False))
+            return
+
+        def dirs_on_level():
+            return filter(
+                lambda x: x is not None,
+                map(lambda x: x if x.is_dir else None, files_container),
+            )
+
+        def dir_names_on_level():
+            return map(lambda x: x.dir_name if x.is_dir else None, files_container)
+
+        if path_part not in dir_names_on_level():
+            files_container.append(
+                DirectoryModel(dir_name=path_part, files=[], is_dir=True)
+            )
+
+        for i in dirs_on_level():
+            if i.dir_name == path_part:
+                self.append(file, level + 1, i)
+                break
+
+        # parts = [Path(i) for i in file.parts]
 
 
 DirectoryModel.model_rebuild()
@@ -87,7 +119,6 @@ def copy_file(
 
 def write_transcript(
     lines: list[str],
-    target_file: str,
     filter_predicate: Callable[[str], bool] = lambda _: True,
     post_processing: Callable[[str], str] = lambda x: x,
 ):
@@ -98,8 +129,7 @@ def write_transcript(
         filter_predicate - filter out lines not matching criteria
         post_processing - transform line before writing one
     """
-    with open(target_file, "a", encoding="utf-8") as f:
-        f.writelines(map(post_processing, filter(filter_predicate, lines)))
+    return map(post_processing, filter(filter_predicate, lines))
 
 
 router = APIRouter(
@@ -162,7 +192,7 @@ def process_line(
         else 0
     )
     formatted_line = config.line_format.format(
-        file=binding.audio.file_name,
+        file="files/" + binding.audio.file_name,
         text=(
             binding.text.text
             if str(binding.text.text).strip() != ""
@@ -236,48 +266,42 @@ def convert_tree_to_pydantic(root: Path):
 
 @router.post("/", response_model=DirectoryModel)
 async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
-    rmtree(output_dir, ignore_errors=True)
-    output_dir.mkdir()
     bindings = await get_all_bindings(db)
+    service = minio_service.minio_service
+    service.remove_dir(str(output_dir))
+
+    for b in bindings:
+        subdir = Path(
+            output_dir,
+        )
+        if config.divide_by_category:
+            subdir = Path(
+                subdir,
+                b.category.name if b.category else config.uncaterized_name,
+                "files",
+            )
+        else:
+            subdir = Path(subdir, "files")
+
+        subdir = Path(subdir, b.audio.file_name)
+
+        service.copy_file(b.audio.url, str(subdir))
+
     categories = set(
         map(
-            lambda x: x.replace(" ", config.category_space_replacer),
-            map(
-                lambda x: x.lower() if config.category_to_lower else x,
-                map(
-                    lambda x: (
-                        x.category.name if x.category else config.uncaterized_name
-                    ),
-                    bindings,
-                ),
-            ),
+            lambda x: x.category.name if x.category else config.uncaterized_name,
+            bindings,
         )
     )
-    # TODO: Adjust finalise to use minio instead of local storage
+    indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
-    # audio_paths = map(lambda x: x.audio.url , bindings)
-    #
-    # indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
-    #
-    # transcript_data = process_transcript(bindings, config, indexed_categories)
-    # used_category = categories if config.divide_by_category else []
-    # for category in used_category:
-    #     prepare_path(category)
-    #
-    # if len(used_category) == 0:
-    #     Path(output_dir, "wavs").mkdir(parents=True, exist_ok=True)
-    #
-    # for audio_path in audio_paths:
-    #     download
-    #     copy_file(str(audio_path[0]), str(audio_path[1]))
-    #
-    # if config.export_transcript:
-    #     for data in transcript_data:
-    #         write_transcript(
-    #             data["lines"],
-    #             str(data["path"]),
-    #             lambda x: x.find(EMPTY_TEXT_TAG) == -1 if config.omit_empty else True,
-    #             lambda x: x.replace(EMPTY_TEXT_TAG, ""),
-    #         )
-    converted_tree = convert_tree_to_pydantic(output_dir)
-    return converted_tree
+    transcript_data = process_transcript(bindings, config, indexed_categories)
+    for i in transcript_data:
+        lines = "".join(i["lines"])
+        path = i["path"]
+        service.append_to_text(str(path), lines)
+    base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
+    for item in service.list_files("temp"):
+        base_dir.append(Path(item.replace("temp/", "")))
+
+    return base_dir
