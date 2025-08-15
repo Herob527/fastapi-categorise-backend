@@ -211,7 +211,7 @@ def convert_tree_to_pydantic(root: Path):
 
 @router.post("/", response_model=DirectoryModel)
 async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
-    bindings = await get_all_bindings(db)
+    bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
     service = minio_service.minio_service
     service.remove_dir(str(output_dir))
 

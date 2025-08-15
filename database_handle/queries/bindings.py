@@ -29,7 +29,9 @@ async def get_pagination(db: AsyncSession):
     return PaginationModel(total=result)
 
 
-async def get_all_bindings(db: AsyncSession, category_name: str | None = None):
+async def get_all_bindings(
+    db: AsyncSession, category_name: str | None = None, skip_empty: bool = False
+):
 
     stmt = (
         select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
@@ -40,6 +42,8 @@ async def get_all_bindings(db: AsyncSession, category_name: str | None = None):
 
     if category_name:
         stmt = stmt.where(CategoryAlias.name == category_name)
+    if skip_empty:
+        stmt = stmt.where(func.trim(TextAlias.text) != "")
 
     result = (await db.execute(stmt)).all()
 
