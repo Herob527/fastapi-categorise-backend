@@ -215,21 +215,24 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
     service = minio_service.minio_service
     service.remove_dir(str(output_dir))
 
-    for b in bindings:
-        subdir = Path(
-            output_dir,
-        )
-        if config.divide_by_category:
+    def get_paths():
+        for b in bindings:
             subdir = Path(
-                subdir,
-                b.category.name if b.category else config.uncategorized_name,
-                "files",
+                output_dir,
             )
-        else:
-            subdir = Path(subdir, "files")
+            if config.divide_by_category:
+                subdir = Path(
+                    subdir,
+                    b.category.name if b.category else config.uncategorized_name,
+                    "files",
+                )
+            else:
+                subdir = Path(subdir, "files")
 
-        subdir = Path(subdir, b.audio.file_name)
-        service.copy_file(b.audio.url, str(subdir))
+            yield (b.audio.url, Path(subdir, b.audio.file_name))
+
+    for url, subdir in get_paths():
+        service.copy_file(url, str(subdir))
 
     categories = set(
         map(
