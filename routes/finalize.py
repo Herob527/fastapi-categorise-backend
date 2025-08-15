@@ -190,7 +190,7 @@ def process_line(
         else 0
     )
     formatted_line = config.line_format.format(
-        file="files/" + binding.audio.file_name,
+        file=f"files/{binding.audio.file_name}",
         text=(
             binding.text.text
             if str(binding.text.text).strip() != ""
