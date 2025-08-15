@@ -1,6 +1,7 @@
 from __future__ import annotations
 import concurrent.futures
 import asyncio
+from os import cpu_count
 import re
 from pathlib import Path
 from typing import Dict, List, Literal, TypedDict, Union, cast
@@ -234,7 +235,9 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
             yield (b.audio.url, Path(subdir, b.audio.file_name))
 
     async def perform_copy():
-        sem = asyncio.Semaphore(20)  # Allow up to 20 concurrent copies
+        sem = asyncio.Semaphore(
+            (cpu_count() or 6) * 5
+        )  # Allow up to 20 concurrent copies
 
         async def limited_copy(url, subdir):
             async with sem:
