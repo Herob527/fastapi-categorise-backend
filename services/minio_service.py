@@ -23,22 +23,13 @@ class MinIOService:
     def __init__(self):
 
         self.client = Minio(
-            endpoint="localhost:9010",
+            endpoint="nginx-minio:9010",
             access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
             secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin123"),
             secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
-            http_client=urllib3.ProxyManager(
-                "http://nginx-minio:9010/",
-                timeout=urllib3.Timeout.DEFAULT_TIMEOUT,
-                retries=urllib3.Retry(
-                    total=5,
-                    backoff_factor=0.2,
-                    status_forcelist=[500, 502, 503, 504],
-                ),
-            ),
         )
         self.bucket_name = os.getenv("MINIO_BUCKET_NAME", "categorize-files")
-        self.endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
+        self.endpoint = os.getenv("MINIO_ENDPOINT", "nginx-minio:9010")
         self._ensure_bucket_exists()
 
     def _ensure_bucket_exists(self):
