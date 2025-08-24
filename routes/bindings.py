@@ -32,6 +32,7 @@ from database_handle.queries.categories import (
     get_one_category_by_name,
 )
 from routes.audios import delete_audio, upload_audio
+import asyncio
 
 __all__ = ["router"]
 
@@ -98,13 +99,20 @@ async def create_binding(
         Category(id=category_id, name=category) if category is not None else None
     )
     try:
+        tasks = []
         if new_category is not None:
-            await create_category(db=db, category=new_category)
+            tasks.append(create_category(db=db, category=new_category))
         new_text = Text(id=binding_id, text="")
         db.add(new_text)
-        returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
-        db.add(Audio(**returned_audio.model_dump()))
-        await create_new_binding(db=db, binding=new_binding)
+
+        async def upload():
+            returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
+            db.add(Audio(**returned_audio.model_dump()))
+
+        tasks.append(upload())
+        print(tasks)
+        await asyncio.gather(*tasks)
+        db.add(new_binding)
         await db.commit()
     except HTTPException as e:
         await db.rollback()
