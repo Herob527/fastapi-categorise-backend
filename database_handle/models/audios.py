@@ -9,9 +9,9 @@ class Audio(Base):
     __tablename__ = "audios"
 
     id = Column(Uuid, primary_key=True, index=True)
-    url = Column(String, nullable=False, unique=True)
+    url = Column(String, nullable=True, unique=True)
     file_name = Column(String, nullable=False)
-    audio_length = Column(Float, nullable=False)
+    audio_length = Column(Float, nullable=True)
 
 
 class AudioModel(BaseModel):
