@@ -2,7 +2,7 @@ from typing import Annotated, List
 from uuid import uuid4
 
 from database_handle.models.texts import Text
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,7 +32,6 @@ from database_handle.queries.categories import (
     get_one_category_by_name,
 )
 from routes.audios import delete_audio, upload_audio
-import asyncio
 
 __all__ = ["router"]
 
@@ -81,6 +80,7 @@ async def create_binding(
     audio: Annotated[UploadFile, File()],
     category: str | None = None,
     db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     binding_id = uuid4()
     category_exist = (
@@ -99,19 +99,13 @@ async def create_binding(
         Category(id=category_id, name=category) if category is not None else None
     )
     try:
-        tasks = []
         if new_category is not None:
-            tasks.append(create_category(db=db, category=new_category))
+            await create_category(db=db, category=new_category)
         new_text = Text(id=binding_id, text="")
         db.add(new_text)
-
-        async def upload():
-            returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
-            db.add(Audio(**returned_audio.model_dump()))
-
-        tasks.append(upload())
-        await asyncio.gather(*tasks)
-        db.add(new_binding)
+        returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
+        db.add(Audio(**returned_audio.model_dump()))
+        await create_new_binding(db=db, binding=new_binding)
         await db.commit()
     except HTTPException as e:
         await db.rollback()
@@ -120,9 +114,17 @@ async def create_binding(
 
 
 @router.delete("/{binding_id}")
-async def remove_binding(binding_id: UUID4, db: AsyncSession = Depends(get_db)):
+async def remove_binding(
+    binding_id: UUID4,
+    db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
     await binding_remove(db, binding_id)
-    await delete_audio(binding_id, db)
+
+    async def delete():
+        await delete_audio(binding_id, db)
+
+    background_tasks.add_task(delete)
     await db.commit()
     return {"hejo": binding_id}
 

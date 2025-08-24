@@ -1,6 +1,6 @@
 from uuid import uuid4
 from pprint import pprint
-from fastapi import APIRouter, UploadFile, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, UploadFile, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,7 @@ async def upload_audio(
     uuid: UUID4 = uuid4(),
     folder: str = "audio",
     db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ) -> AudioModel:
     """Upload audio file to MinIO and save metadata to database"""
     try:
@@ -33,52 +34,62 @@ async def upload_audio(
         if not file.content_type.startswith("audio/"):
             raise HTTPException(status_code=400, detail="Only audio files are allowed")
 
-        # Upload to MinIO
-        object_name = await minio_service.upload_file(
-            file_data=file.file,
-            filename=file.filename,
-            content_type=file.content_type,
-            folder=folder,
-        )
+        async def upload():
+            if file.content_type is None:
+                raise HTTPException(status_code=400, detail="File type not specified")
+            if file.filename is None:
+                raise HTTPException(status_code=400, detail="File name not specified")
+            # Validate audio file type
+            if not file.content_type.startswith("audio/"):
+                raise HTTPException(
+                    status_code=400, detail="Only audio files are allowed"
+                )
+            # Upload to MinIO
+            object_name = await minio_service.upload_file(
+                file_data=file.file,
+                filename=file.filename,
+                content_type=file.content_type,
+                folder=folder,
+            )
 
-        # Generate MinIO URL for the uploaded file
-        file_url = (
-            f"http://{minio_service.endpoint}/{minio_service.bucket_name}/{object_name}"
-        )
+            # Generate MinIO URL for the uploaded file
+            file_url = f"http://{minio_service.endpoint}/{minio_service.bucket_name}/{object_name}"
 
-        # Download file temporarily to analyze audio properties
-        file_data = await minio_service.download_file(object_name)
+            # Download file temporarily to analyze audio properties
+            file_data = await minio_service.download_file(object_name)
 
-        # Analyze audio file properties using librosa
-        # Save to temporary file for librosa processing
-        import tempfile
+            # Analyze audio file properties using librosa
+            # Save to temporary file for librosa processing
+            import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            temp_file.write(file_data)
-            temp_file_path = temp_file.name
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                temp_file.write(file_data)
+                temp_file_path = temp_file.name
 
-        try:
-            # Load audio file and extract metadata
-            y, sr = librosa.load(temp_file_path, sr=None)
-            audio_length = librosa.get_duration(y=y, sr=sr)
+            try:
+                # Load audio file and extract metadata
+                y, sr = librosa.load(temp_file_path, sr=None)
+                audio_length = librosa.get_duration(y=y, sr=sr)
 
-            # Get number of channels (librosa loads as mono by default, so check original)
-            import soundfile as sf
+                # Get number of channels (librosa loads as mono by default, so check original)
+                import soundfile as sf
 
-            info = sf.info(temp_file_path)
-        finally:
-            # Clean up temporary file
-            import os
+                info = sf.info(temp_file_path)
+            finally:
+                # Clean up temporary file
+                import os
 
-            os.unlink(temp_file_path)
+                os.unlink(temp_file_path)
 
         # Save metadata to database with your existing Audio model
         audio_record = Audio(
             id=uuid,
-            url=object_name,
+            url=None,
             file_name=file.filename,
-            audio_length=audio_length,
+            audio_length=None,
         )
+
+        background_tasks.add_task(upload)
 
         return AudioModel.from_orm(audio_record)
 
