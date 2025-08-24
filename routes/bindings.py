@@ -110,7 +110,6 @@ async def create_binding(
             db.add(Audio(**returned_audio.model_dump()))
 
         tasks.append(upload())
-        print(tasks)
         await asyncio.gather(*tasks)
         db.add(new_binding)
         await db.commit()
