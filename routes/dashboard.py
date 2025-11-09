@@ -37,12 +37,12 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
     empty_transcript_count = await get_empty_transcript_count(db)
 
     return DashboardModel(
-        categories_count=categories_count,
-        total_bindings_count=total_bindings_count,
+        categories_count=categories_count or 0,
+        total_bindings_count=total_bindings_count or 0,
         category_with_most_bindings=category_with_most_bindings,
-        uncategorizaed_count=uncategorized_count,
-        categorized_count=categorized_count,
+        uncategorizaed_count=uncategorized_count or 0,
+        categorized_count=categorized_count or 0,
         total_audio_duration=round(total_audio_duration, 2),
-        filled_transcript_count=filled_transcript_count,
-        empty_transcript_count=empty_transcript_count,
+        filled_transcript_count=filled_transcript_count or 0,
+        empty_transcript_count=empty_transcript_count or 0,
     )
