@@ -43,6 +43,7 @@ async def upload_audio(
         async def upload():
             # Create a new session for the background task
             from database_handle.database import get_sessionmanager
+
             async with get_sessionmanager().session() as bg_session:
                 # Upload to MinIO using BytesIO
                 object_name = await minio_service.upload_file(
@@ -59,7 +60,7 @@ async def upload_audio(
 
                 await AudioQueries(session=bg_session).update_audio(
                     audio_id=uuid,
-                    url=folder + "/" + object_name,
+                    url=object_name,
                     audio_length=audio_length,
                     status=StatusEnum.available,
                 )
