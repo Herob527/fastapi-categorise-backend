@@ -23,8 +23,21 @@ Base: DeclarativeBase = declarative_base()
 
 class DatabaseSessionManager:
     def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
-        self._engine = create_async_engine(host, **engine_kwargs)
-        self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine)
+        # Merge default pool settings with any provided engine_kwargs
+        default_kwargs = {
+            "pool_recycle": 3600,  # Recycle connections after 1 hour
+            "pool_pre_ping": True,  # Verify connections before using
+            "echo_pool": False,  # Set to True for debugging pool issues
+        }
+        default_kwargs.update(engine_kwargs)
+
+        self._engine = create_async_engine(host, **default_kwargs)
+        self._sessionmaker = async_sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            expire_on_commit=False,
+            bind=self._engine
+        )
 
     async def close(self):
         if self._engine is None:
@@ -62,6 +75,11 @@ class DatabaseSessionManager:
 
 
 sessionmanager = DatabaseSessionManager(SQLALCHEMY_DATABASE_URL)
+
+
+def get_sessionmanager():
+    """Get the global session manager instance."""
+    return sessionmanager
 
 
 async def get_db():
