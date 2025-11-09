@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
@@ -27,32 +26,15 @@ router = APIRouter(
 
 @router.get("/", response_model=DashboardModel)
 async def get_dashboard(db: AsyncSession = Depends(get_db)):
-    # Create a list of all async operations
-    tasks = [
-        get_categories_count(db),
-        get_total_bindings_count(db),
-        get_category_with_most_bindings(db),
-        get_uncategorized_count(db),
-        get_categorized_count(db),
-        get_total_audio_duration(db),
-        get_filled_transcript_count(db),
-        get_empty_transcript_count(db),
-    ]
-
-    # Execute all queries concurrently
-    results = await asyncio.gather(*tasks)
-
-    # Unpack results in order
-    (
-        categories_count,
-        total_bindings_count,
-        category_with_most_bindings,
-        uncategorized_count,
-        categorized_count,
-        total_audio_duration,
-        filled_transcript_count,
-        empty_transcript_count,
-    ) = results
+    # Execute queries sequentially (SQLAlchemy async sessions don't support concurrent operations)
+    categories_count = await get_categories_count(db)
+    total_bindings_count = await get_total_bindings_count(db)
+    category_with_most_bindings = await get_category_with_most_bindings(db)
+    uncategorized_count = await get_uncategorized_count(db)
+    categorized_count = await get_categorized_count(db)
+    total_audio_duration = await get_total_audio_duration(db)
+    filled_transcript_count = await get_filled_transcript_count(db)
+    empty_transcript_count = await get_empty_transcript_count(db)
 
     return DashboardModel(
         categories_count=categories_count,
