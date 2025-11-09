@@ -35,27 +35,23 @@ async def upload_audio(
         if not file.content_type.startswith("audio/"):
             raise HTTPException(status_code=400, detail="Only audio files are allowed")
 
+        file_content = await file.read()
+        file_size = len(file_content)
+        file_name = file.filename
+        content_type = file.content_type
+
         async def upload():
-            if file.content_type is None:
-                raise HTTPException(status_code=400, detail="File type not specified")
-            if file.filename is None:
-                raise HTTPException(status_code=400, detail="File name not specified")
-            # Validate audio file type
-            if not file.content_type.startswith("audio/"):
-                raise HTTPException(
-                    status_code=400, detail="Only audio files are allowed"
-                )
-            # Upload to MinIO
-            object_name = await minio_service.upload_file(
-                file_data=file.file,
-                size=file.size,
-                filename=file.filename,
-                content_type=file.content_type,
+            # Upload to MinIO using BytesIO
+            await minio_service.upload_file(
+                file_data=BytesIO(file_content),
+                size=file_size,
+                filename=file_name,
+                content_type=content_type,
                 folder=folder,
             )
 
-            # Load audio file and extract metadata
-            y, sr = librosa.load(file.file, sr=None)
+            # Load audio file and extract metadata using the same content
+            y, sr = librosa.load(BytesIO(file_content), sr=None)
             audio_length = librosa.get_duration(y=y, sr=sr)
 
             await AudioQueries(session=db).update_audio(

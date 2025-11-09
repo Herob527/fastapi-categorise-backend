@@ -104,8 +104,9 @@ class MinIOService:
             # Add folder prefix if specified
             object_name = f"{folder}/{unique_filename}" if folder else unique_filename
 
-            # Upload file
-            self.client.put_object(
+            # Upload file (run synchronous MinIO operation in thread pool)
+            await asyncio.to_thread(
+                self.client.put_object,
                 bucket_name=self.bucket_name,
                 object_name=object_name,
                 data=file_data,

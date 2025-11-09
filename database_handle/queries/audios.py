@@ -19,3 +19,4 @@ class AudioQueries:
             .where(Audio.id == audio_id)
             .values(audio_length=audio_length, audio_status=status)
         )
+        await self.session.commit()
