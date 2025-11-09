@@ -3,7 +3,6 @@ import asyncio
 import os
 from typing import BinaryIO
 from minio import Minio
-from minio.api import urllib3
 from minio.commonconfig import CopySource
 from minio.error import S3Error
 from fastapi import HTTPException
