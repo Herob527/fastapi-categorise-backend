@@ -1,13 +1,15 @@
 from typing import Annotated, List
 from uuid import uuid4
 
+from pydantic import BaseModel
+
 from database_handle.models.texts import Text
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database_handle.database import get_db
-from database_handle.models.audios import Audio
+from database_handle.models.audios import Audio, StatusEnum
 from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
 from database_handle.models.categories import Category
 from database_handle.queries.bindings import (
@@ -32,6 +34,7 @@ from database_handle.queries.categories import (
     get_one_category_by_name,
 )
 from routes.audios import delete_audio, upload_audio
+from services import minio_service
 
 __all__ = ["router"]
 
@@ -75,12 +78,16 @@ async def get_all_bindings(
     return await all_bindings_query(db, category)
 
 
-@router.post("")
+class CreateResponseModel(BaseModel):
+    upload_url: str
+    binding_id: UUID4
+
+
+@router.post("", response_model=CreateResponseModel)
 async def create_binding(
     audio: Annotated[UploadFile, File()],
     category: str | None = None,
     db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     binding_id = uuid4()
     category_exist = (
@@ -88,6 +95,10 @@ async def create_binding(
         if category is not None
         else None
     )
+    if not audio.filename:
+        raise HTTPException(
+            status_code=400, detail="Audio file is required to have filename"
+        )
     category_id = uuid4() if category_exist is None else category_exist.id
     new_binding = Binding(
         id=binding_id,
@@ -103,14 +114,16 @@ async def create_binding(
             await create_category(db=db, category=new_category)
         new_text = Text(id=binding_id, text="")
         db.add(new_text)
-        returned_audio = await upload_audio(file=audio, uuid=binding_id, db=db)
-        db.add(Audio(**returned_audio.model_dump()))
+        db.add(
+            Audio(id=binding_id, file_name=audio.filename, status=StatusEnum.waiting)
+        )
+        presigned_url = minio_service.minio_service.get_upload_url(audio.filename)
         await create_new_binding(db=db, binding=new_binding)
         await db.commit()
     except HTTPException as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    return {"Test": category}
+    return CreateResponseModel(upload_url=presigned_url, binding_id=binding_id)
 
 
 @router.delete("/{binding_id}")

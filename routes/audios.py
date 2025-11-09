@@ -10,20 +10,21 @@ from pydantic import UUID4
 from sqlalchemy.orm.query import sql
 from sqlalchemy.sql.expression import select
 from database_handle.database import get_db
-from database_handle.models.audios import Audio, AudioModel
+from database_handle.models.audios import Audio, AudioModel, StatusEnum
+from database_handle.queries.audios import AudioQueries
 from services.minio_service import minio_service
 
 router = APIRouter(prefix="/audio", tags=["audio"])
 
 
-@router.post("/upload", response_model=AudioModel)
+@router.post("/upload")
 async def upload_audio(
     file: UploadFile,
     uuid: UUID4 = uuid4(),
     folder: str = "audio",
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-) -> AudioModel:
+):
     """Upload audio file to MinIO and save metadata to database"""
     try:
         if file.content_type is None:
@@ -52,9 +53,6 @@ async def upload_audio(
                 folder=folder,
             )
 
-            # Generate MinIO URL for the uploaded file
-            file_url = f"http://{minio_service.endpoint}/{minio_service.bucket_name}/{object_name}"
-
             # Download file temporarily to analyze audio properties
             file_data = await minio_service.download_file(object_name)
 
@@ -71,27 +69,18 @@ async def upload_audio(
                 y, sr = librosa.load(temp_file_path, sr=None)
                 audio_length = librosa.get_duration(y=y, sr=sr)
 
-                # Get number of channels (librosa loads as mono by default, so check original)
-                import soundfile as sf
-
-                info = sf.info(temp_file_path)
+                await AudioQueries(session=db).update_audio(
+                    audio_id=uuid,
+                    audio_length=audio_length,
+                    status=StatusEnum.available,
+                )
             finally:
                 # Clean up temporary file
                 import os
 
                 os.unlink(temp_file_path)
 
-        # Save metadata to database with your existing Audio model
-        audio_record = Audio(
-            id=uuid,
-            url=None,
-            file_name=file.filename,
-            audio_length=None,
-        )
-
         background_tasks.add_task(upload)
-
-        return AudioModel.from_orm(audio_record)
 
     except Exception as e:
         await db.rollback()

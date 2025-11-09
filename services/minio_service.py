@@ -55,6 +55,9 @@ class MinIOService:
             print(f"Error removing bucket: {e}")
             raise HTTPException(status_code=500, detail="Failed to remove bucket")
 
+    def get_upload_url(self, object_name: str):
+        return self.client.get_presigned_url("PUT", self.bucket_name, object_name)
+
     def append_to_text(self, object_name: str, text: str):
         try:
             self.client.put_object(
