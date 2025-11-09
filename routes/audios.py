@@ -41,24 +41,29 @@ async def upload_audio(
         content_type = file.content_type
 
         async def upload():
-            # Upload to MinIO using BytesIO
-            await minio_service.upload_file(
-                file_data=BytesIO(file_content),
-                size=file_size,
-                filename=file_name,
-                content_type=content_type,
-                folder=folder,
-            )
+            # Create a new session for the background task
+            from database_handle.database import get_sessionmanager
+            async with get_sessionmanager().session() as bg_session:
+                # Upload to MinIO using BytesIO
+                object_name = await minio_service.upload_file(
+                    file_data=BytesIO(file_content),
+                    size=file_size,
+                    filename=file_name,
+                    content_type=content_type,
+                    folder=folder,
+                )
 
-            # Load audio file and extract metadata using the same content
-            y, sr = librosa.load(BytesIO(file_content), sr=None)
-            audio_length = librosa.get_duration(y=y, sr=sr)
+                # Load audio file and extract metadata using the same content
+                y, sr = librosa.load(BytesIO(file_content), sr=None)
+                audio_length = librosa.get_duration(y=y, sr=sr)
 
-            await AudioQueries(session=db).update_audio(
-                audio_id=uuid,
-                audio_length=audio_length,
-                status=StatusEnum.available,
-            )
+                await AudioQueries(session=bg_session).update_audio(
+                    audio_id=uuid,
+                    url=folder + "/" + object_name,
+                    audio_length=audio_length,
+                    status=StatusEnum.available,
+                )
+                await bg_session.commit()
 
         background_tasks.add_task(upload)
 
@@ -133,6 +138,7 @@ async def delete_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
 
     if success:
         await db.delete(audio_record)
+        await db.commit()
         return {"message": "Audio file deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete audio file")
