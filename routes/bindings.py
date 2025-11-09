@@ -133,12 +133,16 @@ async def remove_binding(
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     await binding_remove(db, binding_id)
+    await db.commit()
 
     async def delete():
-        await delete_audio(binding_id, db)
+        # Create a new session for the background task
+        from database_handle.database import get_sessionmanager
+        async with get_sessionmanager().session() as bg_session:
+            await delete_audio(binding_id, bg_session)
+            await bg_session.commit()
 
     background_tasks.add_task(delete)
-    await db.commit()
     return {"hejo": binding_id}
 
 
