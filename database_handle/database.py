@@ -23,11 +23,10 @@ Base: DeclarativeBase = declarative_base()
 
 class DatabaseSessionManager:
     def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
-        # Merge default pool settings with any provided engine_kwargs
         default_kwargs = {
-            "pool_recycle": 3600,  # Recycle connections after 1 hour
-            "pool_pre_ping": True,  # Verify connections before using
-            "echo_pool": False,  # Set to True for debugging pool issues
+            "pool_recycle": 3600,
+            "pool_pre_ping": True,
+            "echo_pool": False,
         }
         default_kwargs.update(engine_kwargs)
 
@@ -78,7 +77,6 @@ sessionmanager = DatabaseSessionManager(SQLALCHEMY_DATABASE_URL)
 
 
 def get_sessionmanager():
-    """Get the global session manager instance."""
     return sessionmanager
 
 
