@@ -12,11 +12,11 @@ class AudioQueries:
     session: AsyncSession
 
     async def update_audio(
-        self, audio_id: UUID4, audio_length: float, status: StatusEnum
+        self, audio_id: UUID4, audio_length: float, status: StatusEnum, url: str
     ):
         await self.session.execute(
             update(Audio)
             .where(Audio.id == audio_id)
-            .values(audio_length=audio_length, audio_status=status)
+            .values(audio_length=audio_length, audio_status=status, url=url)
         )
         await self.session.commit()
