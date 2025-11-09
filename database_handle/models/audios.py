@@ -23,6 +23,7 @@ class Audio(Base):
 
 class AudioModel(BaseModel):
     id: UUID4
+    url: str
     file_name: str
     audio_length: float | None
     audio_status: StatusEnum
