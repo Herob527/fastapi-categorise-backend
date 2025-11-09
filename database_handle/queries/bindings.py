@@ -38,6 +38,7 @@ async def get_all_bindings(
         .outerjoin(CategoryAlias)
         .join(AudioAlias)
         .join(TextAlias)
+        .where(AudioAlias.audio_status != StatusEnum.waiting)
     )
 
     if category_name:
