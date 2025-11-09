@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import delete, update
 
-from database_handle.models.audios import Audio
+from database_handle.models.audios import Audio, StatusEnum
 from database_handle.models.bindings import (
     Binding,
     BindingEntry,
@@ -75,6 +75,7 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
         .limit(limit)
         .offset(page * limit)
         .order_by(AudioAlias.file_name)
+        .where(AudioAlias.audio_status != StatusEnum.waiting)
     )
 
     result = (await db.execute(stmt)).all()

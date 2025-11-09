@@ -20,7 +20,7 @@ router = APIRouter(prefix="/audio", tags=["audio"])
 @router.post("/upload")
 async def upload_audio(
     file: UploadFile,
-    uuid: UUID4 = uuid4(),
+    uuid: UUID4,
     folder: str = "audio",
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -48,37 +48,21 @@ async def upload_audio(
             # Upload to MinIO
             object_name = await minio_service.upload_file(
                 file_data=file.file,
+                size=file.size,
                 filename=file.filename,
                 content_type=file.content_type,
                 folder=folder,
             )
 
-            # Download file temporarily to analyze audio properties
-            file_data = await minio_service.download_file(object_name)
+            # Load audio file and extract metadata
+            y, sr = librosa.load(file.file, sr=None)
+            audio_length = librosa.get_duration(y=y, sr=sr)
 
-            # Analyze audio file properties using librosa
-            # Save to temporary file for librosa processing
-            import tempfile
-
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                temp_file.write(file_data)
-                temp_file_path = temp_file.name
-
-            try:
-                # Load audio file and extract metadata
-                y, sr = librosa.load(temp_file_path, sr=None)
-                audio_length = librosa.get_duration(y=y, sr=sr)
-
-                await AudioQueries(session=db).update_audio(
-                    audio_id=uuid,
-                    audio_length=audio_length,
-                    status=StatusEnum.available,
-                )
-            finally:
-                # Clean up temporary file
-                import os
-
-                os.unlink(temp_file_path)
+            await AudioQueries(session=db).update_audio(
+                audio_id=uuid,
+                audio_length=audio_length,
+                status=StatusEnum.available,
+            )
 
         background_tasks.add_task(upload)
 

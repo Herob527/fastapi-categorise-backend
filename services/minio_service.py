@@ -85,6 +85,7 @@ class MinIOService:
         self,
         file_data: BinaryIO,
         filename: str,
+        size: int,
         content_type: str = "application/octet-stream",
         folder: str = "",
     ) -> str:
@@ -103,17 +104,12 @@ class MinIOService:
             # Add folder prefix if specified
             object_name = f"{folder}/{unique_filename}" if folder else unique_filename
 
-            # Get file size
-            file_data.seek(0, 2)  # Seek to end
-            file_size = file_data.tell()
-            file_data.seek(0)  # Reset to beginning
-
             # Upload file
             self.client.put_object(
                 bucket_name=self.bucket_name,
                 object_name=object_name,
                 data=file_data,
-                length=file_size,
+                length=size,
                 content_type=content_type,
             )
 

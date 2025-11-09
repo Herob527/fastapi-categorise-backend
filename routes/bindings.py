@@ -79,7 +79,6 @@ async def get_all_bindings(
 
 
 class CreateResponseModel(BaseModel):
-    upload_url: str
     binding_id: UUID4
 
 
@@ -115,15 +114,16 @@ async def create_binding(
         new_text = Text(id=binding_id, text="")
         db.add(new_text)
         db.add(
-            Audio(id=binding_id, file_name=audio.filename, status=StatusEnum.waiting)
+            Audio(
+                id=binding_id, file_name=audio.filename, audio_status=StatusEnum.waiting
+            )
         )
-        presigned_url = minio_service.minio_service.get_upload_url(audio.filename)
         await create_new_binding(db=db, binding=new_binding)
         await db.commit()
     except HTTPException as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    return CreateResponseModel(upload_url=presigned_url, binding_id=binding_id)
+    return CreateResponseModel(binding_id=binding_id)
 
 
 @router.delete("/{binding_id}")

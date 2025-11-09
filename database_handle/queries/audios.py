@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
@@ -11,7 +12,7 @@ class AudioQueries:
     session: AsyncSession
 
     async def update_audio(
-        self, audio_id: UUID4, audio_length: float, status=StatusEnum
+        self, audio_id: UUID4, audio_length: float, status: StatusEnum
     ):
         await self.session.execute(
             update(Audio)
