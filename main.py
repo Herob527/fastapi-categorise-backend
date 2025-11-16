@@ -11,8 +11,8 @@ from routes import (
 from routes import (
     categories as r_categories,
 )
-from routes import (
-    finalize as r_finalise,
+from routes.finalize import (
+    routes as r_finalise,
 )
 from routes import (
     texts as r_texts,
