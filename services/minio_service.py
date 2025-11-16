@@ -100,8 +100,9 @@ class MinIOService:
                 else str(uuid.uuid4())
             )
 
-            # Add folder prefix if specified
-            object_name = f"{folder}/{unique_filename}" if folder else unique_filename
+            # TODO: Figure out some better way to handle non-unique filenames
+            # Maybe just require them instead
+            object_name = f"{folder}/{filename}" if folder else filename
 
             # Upload file (run synchronous MinIO operation in thread pool)
             await asyncio.to_thread(
