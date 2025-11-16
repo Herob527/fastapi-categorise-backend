@@ -1,110 +1,22 @@
 from __future__ import annotations
 import asyncio
 from os import cpu_count
-import re
 from pathlib import Path
-from typing import Dict, List, Literal, TypedDict, Union, cast
 import zipfile
 import io
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio.session import AsyncSession
-
 from database_handle.database import get_db
-from database_handle.models.bindings import BindingModel
 from database_handle.queries.bindings import get_all_bindings
+from routes.finalize.classes import DirectoryModel, FinaliseConfigModel
+from routes.finalize.constants import OUTPUT_ARCHIVE, OUTPUT_DIR
+from routes.finalize.utils import process_transcript
 from services import minio_service
 
 __all__ = ["router"]
 
-output_dir = Path("temp")
-
-EMPTY_TEXT_TAG = "<empty-text>"
-
-
-class FileModel(BaseModel):
-    file_name: str
-    is_dir: Literal[False]
-
-
-class DirectoryModel(BaseModel):
-    dir_name: str
-    is_dir: Literal[True]
-    files: List[Union[FileModel, DirectoryModel]]
-
-    def __init__(self, **data):
-        super().__init__(**data)
-
-    def _append(self, dir: DirectoryModel, file: FileModel):
-        dir.files.append(file)
-
-    def append(self, file: Path, level=0, dir: DirectoryModel | None = None):
-        file_name = file.name
-        path_part = file.parts[level]
-        files_container = self.files if dir is None else dir.files
-        if path_part.endswith((".wav", ".txt")):
-            self._append(dir or self, FileModel(file_name=file_name, is_dir=False))
-            return
-
-        def dirs_on_level():
-            return (
-                cast(DirectoryModel, x)
-                for x in files_container
-                if isinstance(x, DirectoryModel)
-            )
-
-        def dir_names_on_level():
-            return map(lambda x: x.dir_name, dirs_on_level())
-
-        if path_part not in dir_names_on_level():
-            files_container.append(
-                DirectoryModel(dir_name=path_part, files=[], is_dir=True)
-            )
-
-        for i in dirs_on_level():
-            if i.dir_name == path_part:
-                self.append(file, level + 1, i)
-                break
-
-
 DirectoryModel.model_rebuild()
-
-
-class FinaliseConfigModel(BaseModel):
-    omit_empty: bool = True
-    line_format: str = Field(
-        "{file}|{text}",
-        description="""\r
-    supported keys:\r
-        {file} - file name\r
-        {category} - category name\r
-        {category_index} - category index (created automatically)\r
-        {text} - text of entry\r
-        {duration} - duration of audio in seconds\r
-    """,
-    )
-    divide_by_category: bool = True
-    category_to_lower: bool = False
-    category_space_replacer: str = " "
-    export_transcript: bool = True
-    uncategorized_name: str
-
-    @field_validator("line_format")
-    def validate_line_format(cls, v):
-        format_keys = re.findall(r"\{(.*?)\}", v)
-
-        expected_keys = ["file", "duration", "category", "category_index", "text"]
-
-        for i in format_keys:
-            if i not in expected_keys:
-                raise ValueError(
-                    f"Unsupported key '{i}' in line_format.\nSupported keys: {expected_keys}"
-                )
-
-        return v
-
 
 router = APIRouter(
     tags=["Finalise"],
@@ -113,117 +25,17 @@ router = APIRouter(
 )
 
 
-class TranscriptEntry(TypedDict):
-    lines: list[str]
-    path: Path
-
-
-def process_category(category: str, config: FinaliseConfigModel):
-    res = category.replace(" ", config.category_space_replacer)
-    if config.category_to_lower:
-        res = res.lower()
-    return res
-
-
-def process_line(
-    binding: BindingModel,
-    config: FinaliseConfigModel,
-    indexed_categories: Dict[str, int] | None = None,
-):
-    category_index = (
-        indexed_categories.get(
-            binding.category.name
-            if binding.category is not None
-            else config.uncategorized_name
-        )
-        if indexed_categories
-        else 0
-    )
-    formatted_line = config.line_format.format(
-        file=f"files/{binding.audio.file_name}",
-        text=(
-            binding.text.text
-            if str(binding.text.text).strip() != ""
-            else EMPTY_TEXT_TAG
-        ),
-        duration=binding.audio.audio_length,
-        category=process_category(
-            str(
-                binding.category.name if binding.category else config.uncategorized_name
-            ),
-            config,
-        ),
-        category_index=category_index,
-    )
-    return f"{formatted_line}\n"
-
-
-def process_transcript(
-    bindings: list[BindingModel],
-    config: FinaliseConfigModel,
-    indexed_categories: Dict[str, int] | None = None,
-):
-    res: Dict[str, TranscriptEntry] = dict()
-    for binding in bindings:
-        target_dir = (
-            Path(
-                output_dir,
-                process_category(
-                    (
-                        str(binding.category.name)
-                        if binding.category is not None
-                        else config.uncategorized_name
-                    ),
-                    config,
-                ),
-            )
-            if config.divide_by_category
-            else Path(output_dir)
-        )
-
-        output_file = Path(target_dir, "transcript.txt")
-        current_category = (
-            str(binding.category.name)
-            if binding.category is not None
-            else config.uncategorized_name
-        )
-
-        current_value = res.get(current_category)
-        text_to_insert = process_line(binding, config, indexed_categories)
-        if current_value is None:
-            res[current_category] = {
-                "lines": [text_to_insert],
-                "path": output_file,
-            }
-        else:
-            res[current_category]["lines"].append(text_to_insert)
-
-    return res.values()
-
-
-def convert_tree_to_pydantic(root: Path):
-    files = []
-    dirs = []
-
-    for i in root.glob("*"):
-        if i.is_dir():
-            dirs.append(convert_tree_to_pydantic(i))
-        else:
-            files.append(FileModel(file_name=i.name, is_dir=False))
-    combined = [*files, *dirs]
-    return DirectoryModel(dir_name=root.name, files=combined, is_dir=True)
-
-
 @router.post("/", response_model=DirectoryModel)
 async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
     service = minio_service.minio_service
-    await service.remove_dir(str(output_dir))
+    await service.remove_dir(str(OUTPUT_DIR))
+    await service.delete_file(OUTPUT_ARCHIVE)
 
     def get_paths():
         for b in bindings:
             subdir = Path(
-                output_dir,
+                OUTPUT_DIR,
             )
             if config.divide_by_category:
                 subdir = Path(
@@ -294,12 +106,11 @@ async def download_finalized_zip():
     """
     Downloads all finalized files from the temp directory as a zip file.
     """
-    from fastapi import HTTPException
 
     service = minio_service.minio_service
 
     # List all files in the temp directory
-    files = list(service.list_files(str(output_dir)))
+    files = list(service.list_files(str(OUTPUT_DIR)))
 
     # Check if there are any files to download
     if not files or len(files) == 0:
@@ -320,7 +131,7 @@ async def download_finalized_zip():
                 file_content = await service.download_file(item.object_name)
 
                 # Remove the "temp/" prefix from the path for the zip archive
-                archive_path = item.object_name.replace(f"{output_dir}/", "")
+                archive_path = item.object_name.replace(f"{OUTPUT_DIR}/", "")
 
                 # Add file to zip
                 zip_file.writestr(archive_path, file_content)
@@ -332,5 +143,5 @@ async def download_finalized_zip():
     return StreamingResponse(
         zip_buffer,
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=categorized_files.zip"},
+        headers={"Content-Disposition": f"attachment; filename={OUTPUT_ARCHIVE}"},
     )
