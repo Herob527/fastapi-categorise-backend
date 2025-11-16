@@ -1,9 +1,11 @@
 from __future__ import annotations
 import asyncio
+import io
 from os import cpu_count
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.queries.bindings import get_all_bindings
 from routes.finalize.classes import DirectoryModel, FinaliseConfigModel
@@ -103,7 +105,7 @@ async def download_finalized_zip():
 
     service = minio_service.minio_service
 
-    zip_file = await service.get_file_url(OUTPUT_ARCHIVE)
+    zip_file = await service.download_file(OUTPUT_ARCHIVE)
 
     # Return the zip file as a streaming response
-    return zip_file
+    return StreamingResponse(io.BytesIO(zip_file), media_type="application/zip")
