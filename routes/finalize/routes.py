@@ -63,6 +63,7 @@ async def finalise(
         )
 
     await perform_copy()
+    print("after-copy")
 
     categories = set(
         map(
@@ -81,9 +82,13 @@ async def finalise(
 
     base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
 
+    print("tes1")
+
     for item in service.list_files("temp"):
         if item.object_name is not None:
             base_dir.append(Path(item.object_name.replace("temp/", "")))
+
+    print("tes2")
 
     background_tasks.add_task(create_zip)
 
