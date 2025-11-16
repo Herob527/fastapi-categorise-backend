@@ -146,6 +146,8 @@ async def create_zip():
 
                 # Add file to zip
                 zip_file.writestr(archive_path, file_content)
-        await minio_service.minio_service.upload_file(
-            zip_buffer, OUTPUT_ARCHIVE, zip_buffer.getbuffer().nbytes
-        )
+
+    size = zip_buffer.getbuffer().nbytes
+    zip_buffer.seek(0)
+
+    await minio_service.minio_service.upload_file(zip_buffer, OUTPUT_ARCHIVE, size)
