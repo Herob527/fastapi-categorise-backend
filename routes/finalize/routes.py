@@ -2,16 +2,13 @@ from __future__ import annotations
 import asyncio
 from os import cpu_count
 from pathlib import Path
-import zipfile
-import io
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from database_handle.database import get_db
 from database_handle.queries.bindings import get_all_bindings
 from routes.finalize.classes import DirectoryModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE, OUTPUT_DIR
-from routes.finalize.utils import process_transcript
+from routes.finalize.utils import create_zip, process_transcript
 from services import minio_service
 
 __all__ = ["router"]
@@ -26,7 +23,11 @@ router = APIRouter(
 
 
 @router.post("/", response_model=DirectoryModel)
-async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_db)):
+async def finalise(
+    config: FinaliseConfigModel,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
     service = minio_service.minio_service
     await service.remove_dir(str(OUTPUT_DIR))
@@ -84,24 +85,12 @@ async def finalise(config: FinaliseConfigModel, db: AsyncSession = Depends(get_d
         if item.object_name is not None:
             base_dir.append(Path(item.object_name.replace("temp/", "")))
 
+    background_tasks.add_task(create_zip)
+
     return base_dir
 
 
-@router.get("/{object_id}", response_model=str)
-async def get_dir(object_id: str):
-    return await minio_service.minio_service.get_file_url(object_id)
-
-
-@router.get(
-    "/download/zip",
-    responses={
-        200: {
-            "content": {"application/zip": {}},
-            "description": "Returns a zip file containing all finalized files",
-        },
-        404: {"description": "No finalized files found"},
-    },
-)
+@router.get("/download/zip", response_model=str)
 async def download_finalized_zip():
     """
     Downloads all finalized files from the temp directory as a zip file.
@@ -109,39 +98,7 @@ async def download_finalized_zip():
 
     service = minio_service.minio_service
 
-    # List all files in the temp directory
-    files = list(service.list_files(str(OUTPUT_DIR)))
-
-    # Check if there are any files to download
-    if not files or len(files) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail="No finalized files found. Please run the finalize endpoint first.",
-        )
-
-    # Create a BytesIO object to hold the zip file in memory
-    zip_buffer = io.BytesIO()
-
-    # Create a zip file
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        # Download and add each file to the zip
-        for item in files:
-            if item.object_name is not None:
-                # Download the file content
-                file_content = await service.download_file(item.object_name)
-
-                # Remove the "temp/" prefix from the path for the zip archive
-                archive_path = item.object_name.replace(f"{OUTPUT_DIR}/", "")
-
-                # Add file to zip
-                zip_file.writestr(archive_path, file_content)
-
-    # Seek to the beginning of the BytesIO buffer
-    zip_buffer.seek(0)
+    zip_file = await service.get_file_url(OUTPUT_ARCHIVE)
 
     # Return the zip file as a streaming response
-    return StreamingResponse(
-        zip_buffer,
-        media_type="application/zip",
-        headers={"Content-Disposition": f"attachment; filename={OUTPUT_ARCHIVE}"},
-    )
+    return zip_file
