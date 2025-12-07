@@ -1,7 +1,5 @@
 from __future__ import annotations
-import asyncio
 import io
-from os import cpu_count
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -10,7 +8,7 @@ from database_handle.database import get_db
 from database_handle.queries.bindings import get_all_bindings
 from routes.finalize.classes import DirectoryModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE, OUTPUT_DIR
-from routes.finalize.utils import create_zip, process_transcript
+from routes.finalize.utils import process_and_create_zip
 from services import minio_service
 
 __all__ = ["router"]
@@ -35,38 +33,6 @@ async def finalise(
     await service.remove_dir(str(OUTPUT_DIR))
     await service.delete_file(OUTPUT_ARCHIVE)
 
-    def get_paths():
-        for b in bindings:
-            subdir = Path(
-                OUTPUT_DIR,
-            )
-            if config.divide_by_category:
-                subdir = Path(
-                    subdir,
-                    b.category.name if b.category else config.uncategorized_name,
-                    "files",
-                )
-            else:
-                subdir = Path(subdir, "files")
-
-            yield (b.audio.url, Path(subdir, b.audio.file_name))
-
-    async def perform_copy():
-        sem = asyncio.Semaphore(
-            (cpu_count() or 6) * 5
-        )  # Allow up to 20 concurrent copies
-
-        async def limited_copy(url, subdir):
-            async with sem:
-                await service.copy_file(url, str(subdir))
-
-        await asyncio.gather(
-            *(limited_copy(url, subdir) for url, subdir in get_paths())
-        )
-
-    await perform_copy()
-    print("after-copy")
-
     categories = set(
         map(
             lambda x: x.category.name if x.category else config.uncategorized_name,
@@ -75,24 +41,13 @@ async def finalise(
     )
     indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
-    transcript_data = process_transcript(bindings, config, indexed_categories)
-
-    for i in transcript_data:
-        lines = "".join(i["lines"])
-        path = i["path"]
-        service.append_to_text(str(path), lines)
-
     base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
-
-    print("tes1")
 
     for item in service.list_files("temp"):
         if item.object_name is not None:
             base_dir.append(Path(item.object_name.replace("temp/", "")))
 
-    print("tes2")
-
-    background_tasks.add_task(create_zip)
+    background_tasks.add_task(process_and_create_zip, bindings, config, indexed_categories)
 
     return base_dir
 

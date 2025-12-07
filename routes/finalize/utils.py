@@ -1,4 +1,6 @@
 from __future__ import annotations
+import asyncio
+from os import cpu_count
 from pathlib import Path
 from typing import Dict
 import zipfile
@@ -112,6 +114,36 @@ def convert_tree_to_pydantic(root: Path):
     return DirectoryModel(dir_name=root.name, files=combined, is_dir=True)
 
 
+def get_paths(bindings: list[BindingModel], config: FinaliseConfigModel):
+    """Generate paths for all audio files based on configuration."""
+    for b in bindings:
+        subdir = Path(OUTPUT_DIR)
+        if config.divide_by_category:
+            subdir = Path(
+                subdir,
+                b.category.name if b.category else config.uncategorized_name,
+                "files",
+            )
+        else:
+            subdir = Path(subdir, "files")
+
+        yield (b.audio.url, Path(subdir, b.audio.file_name))
+
+
+async def perform_copy(bindings: list[BindingModel], config: FinaliseConfigModel):
+    """Copy all audio files to their destination paths with concurrency control."""
+    service = minio_service.minio_service
+    sem = asyncio.Semaphore((cpu_count() or 6) * 5)
+
+    async def limited_copy(url, subdir):
+        async with sem:
+            await service.copy_file(url, str(subdir))
+
+    await asyncio.gather(
+        *(limited_copy(url, subdir) for url, subdir in get_paths(bindings, config))
+    )
+
+
 async def create_zip():
     """
     Downloads all finalized files from the temp directory as a zip file.
@@ -151,3 +183,24 @@ async def create_zip():
     zip_buffer.seek(0)
 
     await minio_service.minio_service.upload_file(zip_buffer, OUTPUT_ARCHIVE, size)
+
+
+async def process_and_create_zip(
+    bindings: list[BindingModel],
+    config: FinaliseConfigModel,
+    indexed_categories: Dict[str, int],
+):
+    service = minio_service.minio_service
+
+    # Step 1: Perform file copying
+    await perform_copy(bindings, config)
+
+    # Step 2: Process and write transcripts
+    transcript_data = process_transcript(bindings, config, indexed_categories)
+    for i in transcript_data:
+        lines = "".join(i["lines"])
+        path = i["path"]
+        service.append_to_text(str(path), lines)
+
+    # Step 3: Create zip archive
+    await create_zip()
