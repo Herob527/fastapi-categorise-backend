@@ -47,7 +47,9 @@ async def finalise(
         if item.object_name is not None:
             base_dir.append(Path(item.object_name.replace("temp/", "")))
 
-    background_tasks.add_task(process_and_create_zip, bindings, config, indexed_categories)
+    background_tasks.add_task(
+        process_and_create_zip, bindings, config, indexed_categories
+    )
 
     return base_dir
 
@@ -60,7 +62,10 @@ async def download_finalized_zip():
 
     service = minio_service.minio_service
 
+    print("pre-download")
     zip_file = await service.download_file(OUTPUT_ARCHIVE)
-
+    print("post-download")
+    zip_bytes = io.BytesIO(zip_file)
+    print("post-bytes")
     # Return the zip file as a streaming response
-    return StreamingResponse(io.BytesIO(zip_file), media_type="application/zip")
+    return StreamingResponse(zip_bytes, media_type="application/zip")
