@@ -1,19 +1,21 @@
-[tool.poetry]
+[project]
 name = "main.py"
 version = "0.1.0"
 description = ""
-authors = ["Herob"]
+authors = [{ name = "Herob" }]
+requires-python = ">=3.11,<4"
 readme = "README.md"
-package-mode = false
+dependencies = [
+    "fastapi>=0.121.1,<0.122",
+    "sqlalchemy>=2.0.7,<3",
+    "uvicorn>=0.38.0,<0.39",
+    "aiosqlite>=0.20.0,<0.21",
+    "python-multipart>=0.0.20,<0.0.21",
+    "pydantic>=2.7.1,<3",
+    "librosa>=0.11.0,<0.12",
+    "psycopg[binary, pool]>=3.2.9,<4",
+    "minio>=7.2.15,<8",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-fastapi = "^0.121.1"
-sqlalchemy = "^2.0.7"
-uvicorn = "^0.38.0"
-aiosqlite = "^0.20.0"
-python-multipart = "^0.0.20"
-pydantic = "^2.7.1"
-librosa = "^0.11.0"
-psycopg = {extras = ["binary", "pool"], version = "^3.2.9"}
-minio = "^7.2.15"
+[tool.uv]
+package = false
