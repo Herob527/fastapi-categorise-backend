@@ -2,20 +2,22 @@ FROM python:3.13.0-bookworm AS base
 
 WORKDIR /app
 
-COPY poetry.toml poetry.lock pyproject.toml /app/
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ENV POETRY_HOME=/opt/poetry
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-ENV PATH="$POETRY_HOME/bin:$PATH"
+# Copy dependency files
+COPY pyproject.toml uv.lock /app/
 
-RUN pip install poetry
-
-RUN poetry install
+# Install dependencies
+RUN uv sync --frozen --no-install-project
 
 FROM base AS dev
 
 COPY . /app
 
+# Install the project
+RUN uv sync --frozen
+
 EXPOSE 80
 
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
