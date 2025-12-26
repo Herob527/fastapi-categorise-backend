@@ -15,5 +15,3 @@ class Exports(Base):
 
     id = Column(String, primary_key=True, index=True)
     status = Column(Enum(ExportStatus), default=ExportStatus.PENDING)
-    created_at = Column(Float, nullable=False)
-    updated_at = Column(Float, nullable=False)
