@@ -7,16 +7,24 @@ Todo:
 from __future__ import annotations
 import io
 from pathlib import Path
-from fastapi import APIRouter, BackgroundTasks, Depends
+from typing import TypedDict
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
+from database_handle.models.exports import ExportStatus, Exports
 from database_handle.queries.bindings import get_all_bindings
-from database_handle.queries.exports import ExportsQueries
+from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE
 from services import minio_service
+
+
+class CategoryData(TypedDict):
+    original_name: str
+    bindings: list[BindingModel]
+
 
 __all__ = ["router"]
 
@@ -35,23 +43,33 @@ async def generate_preview(
     db: AsyncSession = Depends(get_db),
 ):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
-    category_mapping: dict[str, list[BindingModel]] = {}
+    category_mapping: dict[str, CategoryData] = {}
 
     for binding in bindings:
-        category_name = (
+        original_name = (
             binding.category.name if binding.category else config.uncategorized_name
         )
+        # Process category name: replace whitespace with underscores
+        processed_name = original_name.replace(" ", "_")
 
-        if category_mapping.get(category_name) is None:
-            category_mapping[category_name] = []
-        else:
-            category_mapping[category_name].append(binding)
+        if category_mapping.get(processed_name) is None:
+            category_mapping[processed_name] = {
+                "original_name": original_name,
+                "bindings": [],
+            }
+
+        category_mapping[processed_name]["bindings"].append(binding)
 
     files: list[FileModel | DirectoryModel] = []
 
-    for category, bindings in category_mapping.items():
-        directory = DirectoryModel(dir_name=category, files=[], is_dir=True)
-        for binding in bindings:
+    for processed_name, data in category_mapping.items():
+        directory = DirectoryModel(
+            dir_name=processed_name,
+            files=[],
+            is_dir=True,
+            original_name=data["original_name"],
+        )
+        for binding in data["bindings"]:
             directory.append(file=Path(binding.audio.file_name))
         directory.append(file=Path("transcript.txt"))
         files.append(directory)
@@ -61,14 +79,27 @@ async def generate_preview(
     return base_dir
 
 
-@router.get("/schedule/{category}", response_model=str)
+@router.get("/schedule/{category}", response_model=None)
 async def schedule_finalise(
     category: str | None = None,
-    queries: ExportsQueries = Depends(),
+    queries: ExportsQueries = Depends(get_exports_queries),
     backgroundTasks: BackgroundTasks = BackgroundTasks(),
 ):
     id = category or "all"
-    return "Test"
+    was_scheduled = await queries.exists(id)
+    if was_scheduled:
+        raise HTTPException(status_code=423, detail="Already scheduled")
+
+    await queries.schedule(id)
+
+    async def schedule_task():
+        from database_handle.database import get_sessionmanager
+
+        async with get_sessionmanager().session() as bg_session:
+            _queries = ExportsQueries(session=bg_session)
+            await _queries.set_status(id, ExportStatus.IN_PROGRESS)
+
+    backgroundTasks.add_task(schedule_task)
 
 
 @router.get("/download/zip", response_model=str)
