@@ -1,3 +1,9 @@
+"""
+Todo:
+    - Create endpoint for scheduling creation of zip file in the background
+    - Create endpoint for attempting fetching data and if it's not finished, return 202
+"""
+
 from __future__ import annotations
 import io
 from pathlib import Path
@@ -5,8 +11,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
+from database_handle.models.bindings import BindingModel
 from database_handle.queries.bindings import get_all_bindings
-from routes.finalize.classes import DirectoryModel, FinaliseConfigModel
+from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE, OUTPUT_DIR
 from routes.finalize.utils import process_and_create_zip
 from services import minio_service
@@ -22,34 +29,34 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=DirectoryModel)
+@router.post("/generate_preview", response_model=DirectoryModel)
 async def finalise(
     config: FinaliseConfigModel,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
-    service = minio_service.minio_service
-    await service.remove_dir(str(OUTPUT_DIR))
-    await service.delete_file(OUTPUT_ARCHIVE)
+    category_mapping: dict[str, list[BindingModel]] = {}
 
-    categories = set(
-        map(
-            lambda x: x.category.name if x.category else config.uncategorized_name,
-            bindings,
+    for binding in bindings:
+        category_name = (
+            binding.category.name if binding.category else config.uncategorized_name
         )
-    )
-    indexed_categories = {v: k for k, v in dict(enumerate(categories, 1)).items()}
 
-    base_dir = DirectoryModel(dir_name="files", files=[], is_dir=True)
+        if category_mapping.get(category_name) is None:
+            category_mapping[category_name] = []
+        else:
+            category_mapping[category_name].append(binding)
 
-    for item in service.list_files("temp"):
-        if item.object_name is not None:
-            base_dir.append(Path(item.object_name.replace("temp/", "")))
+    files: list[FileModel | DirectoryModel] = []
 
-    background_tasks.add_task(
-        process_and_create_zip, bindings, config, indexed_categories
-    )
+    for category, bindings in category_mapping.items():
+        directory = DirectoryModel(dir_name=category, files=[], is_dir=True)
+        for binding in bindings:
+            directory.append(file=Path(binding.audio.file_name))
+        directory.append(file=Path("transcript.txt"))
+        files.append(directory)
+
+    base_dir = DirectoryModel(dir_name="files", files=files, is_dir=True)
 
     return base_dir
 
