@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import asyncio
+import io
+import zipfile
 from os import cpu_count
 from pathlib import Path
 from typing import Dict
-import zipfile
-import io
 
+from fastapi import HTTPException
 
 from database_handle.models.bindings import BindingModel
 from routes.finalize.classes import (
@@ -148,7 +150,6 @@ async def create_zip():
     """
     Downloads all finalized files from the temp directory as a zip file.
     """
-    from fastapi import HTTPException
 
     service = minio_service.minio_service
 
