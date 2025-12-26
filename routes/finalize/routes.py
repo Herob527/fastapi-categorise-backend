@@ -13,9 +13,9 @@ from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.queries.bindings import get_all_bindings
+from database_handle.queries.exports import ExportsQueries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
-from routes.finalize.constants import OUTPUT_ARCHIVE, OUTPUT_DIR
-from routes.finalize.utils import process_and_create_zip
+from routes.finalize.constants import OUTPUT_ARCHIVE
 from services import minio_service
 
 __all__ = ["router"]
@@ -63,11 +63,12 @@ async def generate_preview(
 
 @router.get("/schedule/{category}", response_model=str)
 async def schedule_finalise(
-    category: str,
-    db: AsyncSession = Depends(get_db),
+    category: str | None = None,
+    queries: ExportsQueries = Depends(),
     backgroundTasks: BackgroundTasks = BackgroundTasks(),
 ):
-    pass
+    id = category or "all"
+    return "Test"
 
 
 @router.get("/download/zip", response_model=str)
