@@ -31,6 +31,11 @@ class MinIOService:
         self.endpoint = os.getenv("MINIO_ENDPOINT", "nginx-minio:9010")
         self._ensure_bucket_exists()
 
+    def file_exists(self, filename):
+        return (
+            self.client.stat_object(self.bucket_name, filename).content_type is not None
+        )
+
     def _ensure_bucket_exists(self):
         """Create bucket if it doesn't exist"""
         try:
