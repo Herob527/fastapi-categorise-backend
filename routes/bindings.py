@@ -60,12 +60,13 @@ async def get_paginated_bindings(
         )
     if per_page <= 0:
         raise HTTPException(status_code=400, detail="Page size must be greater than 0")
-    pagination = await get_pagination(db)
 
-    data = await paginated_bindings_query(page=page, limit=per_page, db=db)
+    bindings, pagination = await paginated_bindings_query(
+        page=page, limit=per_page, db=db
+    )
 
     return PaginatedBindingModel(
-        bindings=data,
+        bindings=bindings,
         page=page,
         pagination=pagination,
     )
@@ -138,6 +139,7 @@ async def remove_binding(
     async def delete():
         # Create a new session for the background task
         from database_handle.database import get_sessionmanager
+
         async with get_sessionmanager().session() as bg_session:
             await delete_audio(binding_id, bg_session)
             await bg_session.commit()
