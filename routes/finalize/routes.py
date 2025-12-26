@@ -61,6 +61,15 @@ async def finalise(
     return base_dir
 
 
+@router.get("/schedule/{category}", response_model=str)
+async def schedule_finalise(
+    category: str,
+    db: AsyncSession = Depends(get_db),
+    backgroundTasks: BackgroundTasks = BackgroundTasks(),
+):
+    pass
+
+
 @router.get("/download/zip", response_model=str)
 async def download_finalized_zip():
     """
