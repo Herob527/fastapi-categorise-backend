@@ -13,6 +13,7 @@ from database_handle.models.bindings import (
 )
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
+from database_handle.utils.pagination import with_paginated
 
 # Create aliases for the tables
 BindingAlias = aliased(Binding, name="binding")
@@ -57,42 +58,17 @@ async def get_all_bindings(
 
 
 async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 20):
-    # Calculate total count and include it with each row
     stmt = (
-        select(
-            BindingAlias,
-            CategoryAlias,
-            AudioAlias,
-            TextAlias,
-            func.count().over().label("total_items"),  # Total count across all rows
-        )
+        select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
         .outerjoin(CategoryAlias)
         .join(AudioAlias)
         .join(TextAlias)
-        .limit(limit)
-        .offset(page * limit)
-        .order_by(AudioAlias.file_name)
         .where(AudioAlias.audio_status != StatusEnum.waiting)
+        .order_by(AudioAlias.file_name)
     )
 
-    result = (await db.execute(stmt)).all()
-
-    if not result:
-        return [], PaginationModel(
-            total=0,
-            current_page=page,
-            total_pages=0,
-            per_page=limit,
-            has_next=False,
-            has_previous=page > 0,
-        )
-
-    # Total is the same for all rows (window function), so grab from first row
-    total_items = result[0][-1]  # Last column is total_items
-    total_pages = (total_items + limit - 1) // limit  # Ceiling division
-
-    bindings = [
-        BindingModel(
+    def transform_row(row):
+        return BindingModel(
             binding=BindingEntry(
                 id=row[0].id,
                 category_id=row[0].category_id,
@@ -103,21 +79,8 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
             audio=row[2],
             text=row[3],
         )
-        for row in result
-    ]
 
-    pagination = PaginationModel(
-        total=total_items,
-        current_page=page,
-        total_pages=total_pages,
-        per_page=limit,
-        has_next=page < total_pages - 1,
-        has_previous=page > 0,
-        next_page=page + 1 if page < total_pages - 1 else None,
-        previous_page=page - 1 if page > 0 else None,
-    )
-
-    return bindings, pagination
+    return await with_paginated(db, stmt, page, limit, transform_row)
 
 
 async def get_total_bindings(db: AsyncSession):
