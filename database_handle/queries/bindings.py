@@ -65,14 +65,18 @@ async def get_all_bindings(
 
 
 async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 20):
-    # Construct the select statement
+    # Calculate total count and include it with each row
     stmt = (
-        (
-            select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
-            .outerjoin(CategoryAlias)
-            .join(AudioAlias)
-            .join(TextAlias)
+        select(
+            BindingAlias,
+            CategoryAlias,
+            AudioAlias,
+            TextAlias,
+            func.count().over().label("total_items"),  # Total count across all rows
         )
+        .outerjoin(CategoryAlias)
+        .join(AudioAlias)
+        .join(TextAlias)
         .limit(limit)
         .offset(page * limit)
         .order_by(AudioAlias.file_name)
@@ -81,8 +85,21 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
 
     result = (await db.execute(stmt)).all()
 
-    # Convert each row to BindingModel
-    return [
+    if not result:
+        return [], PaginationModel(
+            total=0,
+            current_page=page,
+            total_pages=0,
+            per_page=limit,
+            has_next=False,
+            has_previous=page > 0,
+        )
+
+    # Total is the same for all rows (window function), so grab from first row
+    total_items = result[0][-1]  # Last column is total_items
+    total_pages = (total_items + limit - 1) // limit  # Ceiling division
+
+    bindings = [
         BindingModel(
             binding=BindingEntry(
                 id=row[0].id,
@@ -96,6 +113,19 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
         )
         for row in result
     ]
+
+    pagination = PaginationModel(
+        total=total_items,
+        current_page=page,
+        total_pages=total_pages,
+        per_page=limit,
+        has_next=page < total_pages - 1,
+        has_previous=page > 0,
+        next_page=page + 1 if page < total_pages - 1 else None,
+        previous_page=page - 1 if page > 0 else None,
+    )
+
+    return bindings, pagination
 
 
 async def get_total_bindings(db: AsyncSession):
