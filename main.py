@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database_handle.database import engine
-from database_handle.models import audios, bindings, categories, texts
+from database_handle.models import audios, bindings, categories, texts, exports
 from routes import (
     audios as r_audios,
 )
@@ -26,6 +26,7 @@ texts.Base.metadata.create_all(engine)
 audios.Base.metadata.create_all(engine)
 categories.Base.metadata.create_all(engine)
 bindings.Base.metadata.create_all(engine)
+exports.Base.metadata.create_all(engine)
 
 origins = "https?://localhost:.+"
 
