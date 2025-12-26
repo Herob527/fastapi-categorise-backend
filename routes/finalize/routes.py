@@ -30,7 +30,7 @@ router = APIRouter(
 
 
 @router.post("/generate_preview", response_model=DirectoryModel)
-async def finalise(
+async def generate_preview(
     config: FinaliseConfigModel,
     db: AsyncSession = Depends(get_db),
 ):
