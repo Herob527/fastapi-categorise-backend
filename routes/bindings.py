@@ -19,7 +19,6 @@ from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
 )
 from database_handle.queries.bindings import (
-    get_pagination,
     get_total_bindings,
     update_binding_category,
 )

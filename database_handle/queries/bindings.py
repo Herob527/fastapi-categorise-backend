@@ -21,14 +21,6 @@ AudioAlias = aliased(Audio, name="audio")
 TextAlias = aliased(Text, name="text")
 
 
-async def get_pagination(db: AsyncSession):
-    stmt = select(func.count("*")).select_from(Binding)
-
-    result = (await db.scalar(stmt)) or 0
-
-    return PaginationModel(total=result)
-
-
 async def get_all_bindings(
     db: AsyncSession, category_name: str | None = None, skip_empty: bool = False
 ):
