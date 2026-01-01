@@ -44,7 +44,12 @@ class DirectoryModel(BaseModel):
 
         if path_part not in dir_names_on_level():
             files_container.append(
-                DirectoryModel(dir_name=path_part, files=[], is_dir=True)
+                DirectoryModel(
+                    dir_name=path_part,
+                    files=[],
+                    is_dir=True,
+                    category_id=self.category_id,
+                )
             )
 
         for i in dirs_on_level():
