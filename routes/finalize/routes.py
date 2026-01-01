@@ -7,8 +7,9 @@ Todo:
 from __future__ import annotations
 import io
 from pathlib import Path
-from typing import TypedDict
+from typing import List, TypedDict
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
@@ -19,6 +20,7 @@ from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE
 from services import minio_service
+from uuid import uuid4
 
 
 class CategoryData(TypedDict):
@@ -85,18 +87,20 @@ async def generate_preview(
     return base_dir
 
 
-@router.get("/schedule/{category}", response_model=None)
+class ScheduleData(BaseModel):
+    categories: list[str] | None = None
+
+
+@router.post("/schedule", response_model=None)
 async def schedule_finalise(
-    category: str | None = None,
+    params: ScheduleData | None = None,
     queries: ExportsQueries = Depends(get_exports_queries),
     backgroundTasks: BackgroundTasks = BackgroundTasks(),
 ):
-    id = category or "all"
-    was_scheduled = await queries.exists(id)
-    if was_scheduled:
-        raise HTTPException(status_code=423, detail="Already scheduled")
+    categories = params.categories if params is not None else None
 
-    await queries.schedule(id)
+    id = str(uuid4())
+    await queries.schedule(id, categories)
 
     async def schedule_task():
         from database_handle.database import get_sessionmanager
