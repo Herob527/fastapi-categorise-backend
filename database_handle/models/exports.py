@@ -1,6 +1,8 @@
 import enum
-from sqlalchemy import Column, Float, String, Enum
+from sqlalchemy import Column, DateTime, String, Enum, Uuid
+
 from ..database import Base
+from sqlalchemy.sql import func
 
 
 class ExportStatus(enum.Enum):
@@ -13,5 +15,7 @@ class ExportStatus(enum.Enum):
 class Exports(Base):
     __tablename__ = "exports"
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(Uuid, primary_key=True, index=True)
     status = Column(Enum(ExportStatus), default=ExportStatus.PENDING)
+    created_at = Column(DateTime, nullable=True, default=func.now())
+    updated_at = Column(DateTime, nullable=True, default=func.now())

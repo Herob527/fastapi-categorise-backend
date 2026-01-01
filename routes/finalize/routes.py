@@ -22,6 +22,7 @@ from services import minio_service
 
 
 class CategoryData(TypedDict):
+    id: str
     original_name: str
     bindings: list[BindingModel]
 
@@ -46,35 +47,40 @@ async def generate_preview(
     category_mapping: dict[str, CategoryData] = {}
 
     for binding in bindings:
-        original_name = (
+        category_id = str(binding.category.id) if binding.category else "uncategorized"
+        category_name = (
             binding.category.name if binding.category else config.uncategorized_name
         )
-        # Process category name: replace whitespace with underscores
-        processed_name = original_name.replace(" ", "_")
 
-        if category_mapping.get(processed_name) is None:
-            category_mapping[processed_name] = {
-                "original_name": original_name,
-                "bindings": [],
-            }
+        if category_mapping.get(category_id) is None:
+            category_mapping[category_id] = CategoryData(
+                id=category_id,
+                original_name=category_name,
+                bindings=[],
+            )
 
-        category_mapping[processed_name]["bindings"].append(binding)
+        category_mapping[category_id]["bindings"].append(binding)
 
     files: list[FileModel | DirectoryModel] = []
 
-    for processed_name, data in category_mapping.items():
+    for category_id, data in category_mapping.items():
+        # Process category name: replace whitespace with underscores for directory name
+        processed_name = data["original_name"].replace(" ", "_")
         directory = DirectoryModel(
             dir_name=processed_name,
             files=[],
             is_dir=True,
             original_name=data["original_name"],
+            category_id=data["id"],
         )
         for binding in data["bindings"]:
             directory.append(file=Path(binding.audio.file_name))
         directory.append(file=Path("transcript.txt"))
         files.append(directory)
 
-    base_dir = DirectoryModel(dir_name="files", files=files, is_dir=True)
+    base_dir = DirectoryModel(
+        dir_name="files", files=files, is_dir=True, original_name=None
+    )
 
     return base_dir
 

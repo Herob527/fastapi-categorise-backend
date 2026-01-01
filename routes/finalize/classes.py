@@ -16,6 +16,7 @@ class DirectoryModel(BaseModel):
     is_dir: Literal[True]
     files: List[Union[FileModel, DirectoryModel]]
     original_name: str | None = None
+    category_id: str | None = None
 
     def __init__(self, **data):
         super().__init__(**data)
