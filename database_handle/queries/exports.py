@@ -4,6 +4,8 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from database_handle.database import get_db
 from database_handle.models.exports import ExportStatus, Exports
+from database_handle.models.exports_categories import ExportsCategories
+from uuid import uuid4
 
 
 @dataclass
@@ -15,8 +17,18 @@ class ExportsQueries:
         result = await self.session.scalar(stmt)
         return result is not None
 
-    async def schedule(self, id: str):
+    async def schedule(self, id: str, categories: list[str] | None = None):
         self.session.add(Exports(id=id, status=ExportStatus.PENDING))
+        entries = (
+            [
+                ExportsCategories(id=str(uuid4()), export_id=id, category_id=category)
+                for category in categories
+            ]
+            if categories is not None
+            else []
+        )
+        self.session.add_all(entries)
+        await self.session.commit()
 
     async def set_status(self, id: str, status: ExportStatus):
         await self.session.execute(
