@@ -92,7 +92,7 @@ class ScheduleData(BaseModel):
 
 
 
-async def schedule_task(id: str):
+async def schedule_task(id: str, categories: list[str] = []):
     print('scheduled')
     from database_handle.database import get_sessionmanager
 
@@ -102,6 +102,12 @@ async def schedule_task(id: str):
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
         # TODO: Remove this commit after figuring out SQLAlchemy better
         await bg_session.commit()
+
+        for category in categories:
+            res = await get_all_bindings(bg_session, category_name=category)
+            for binding in res:
+                file_url = await minio_service.minio_service.download_file(binding.audio.url)
+
 
 
 @router.post("/schedule", response_model=None)
@@ -115,7 +121,7 @@ async def schedule_finalise(
     id = str(uuid4())
     await queries.schedule(id, categories)
 
-    backgroundTasks.add_task(schedule_task, id=id)
+    backgroundTasks.add_task(schedule_task, id=id, categories=categories or [])
 
 
 @router.get("/download/zip", response_model=str)
