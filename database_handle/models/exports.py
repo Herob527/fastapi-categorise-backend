@@ -19,3 +19,4 @@ class Exports(Base):
     status = Column(Enum(ExportStatus), default=ExportStatus.PENDING)
     created_at = Column(DateTime, nullable=True, default=func.now())
     updated_at = Column(DateTime, nullable=True, default=func.now())
+    archive_url = Column(String, nullable=True, default=None)
