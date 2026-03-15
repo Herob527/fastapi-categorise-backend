@@ -92,7 +92,7 @@ class ScheduleData(BaseModel):
 
 
 
-async def schedule_task(id: str, categories: list[str] = []):
+async def schedule_task(id: str, categories: list[str] = [], skip_empty: bool = False):
     print('scheduled')
     from database_handle.database import get_sessionmanager
 
@@ -104,9 +104,9 @@ async def schedule_task(id: str, categories: list[str] = []):
         await bg_session.commit()
 
         for category in categories:
-            res = await get_all_bindings(bg_session, category_name=category)
+            res = await get_all_bindings(bg_session, category_name=category, skip_empty=skip_empty)
             for binding in res:
-                file_url = await minio_service.minio_service.download_file(binding.audio.url)
+                file = await minio_service.minio_service.download_file(binding.audio.url)
 
 
 
