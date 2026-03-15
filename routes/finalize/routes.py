@@ -7,14 +7,14 @@ Todo:
 from __future__ import annotations
 import io
 from pathlib import Path
-from typing import List, TypedDict
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from typing import TypedDict
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
-from database_handle.models.exports import ExportStatus, Exports
+from database_handle.models.exports import ExportStatus
 from database_handle.queries.bindings import get_all_bindings
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
@@ -102,6 +102,7 @@ async def schedule_task(id: str):
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
         # TODO: Remove this commit after figuring out SQLAlchemy better
         await bg_session.commit()
+
 
 @router.post("/schedule", response_model=None)
 async def schedule_finalise(
