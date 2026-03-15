@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from database_handle.database import engine
+from sqlalchemy import text
+from database_handle.database import engine, sessionmanager
 from database_handle.models import (
     audios,
     bindings,
@@ -53,6 +55,16 @@ app.include_router(r_audios.router)
 app.include_router(r_bindings.router)
 app.include_router(r_finalise.router)
 app.include_router(r_dashboard.router)
+
+
+@app.get("/health")
+async def health():
+    try:
+        async with sessionmanager.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok"}
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "unavailable", "detail": str(e)})
 
 
 @app.get("/")
