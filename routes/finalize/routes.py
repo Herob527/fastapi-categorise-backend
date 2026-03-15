@@ -91,25 +91,31 @@ class ScheduleData(BaseModel):
     categories: list[str] | None = None
 
 
+
+async def schedule_task(id: str):
+    print('scheduled')
+    from database_handle.database import get_sessionmanager
+
+    async with get_sessionmanager().session() as bg_session:
+        print('context')
+        _queries = ExportsQueries(session=bg_session)
+        await _queries.set_status(id, ExportStatus.IN_PROGRESS)
+
+        await bg_session.commit()
+        print('status set')
+
 @router.post("/schedule", response_model=None)
 async def schedule_finalise(
+    backgroundTasks: BackgroundTasks,
     params: ScheduleData | None = None,
     queries: ExportsQueries = Depends(get_exports_queries),
-    backgroundTasks: BackgroundTasks = BackgroundTasks(),
 ):
     categories = params.categories if params is not None else None
 
     id = str(uuid4())
     await queries.schedule(id, categories)
 
-    async def schedule_task():
-        from database_handle.database import get_sessionmanager
-
-        async with get_sessionmanager().session() as bg_session:
-            _queries = ExportsQueries(session=bg_session)
-            await _queries.set_status(id, ExportStatus.IN_PROGRESS)
-
-    backgroundTasks.add_task(schedule_task)
+    backgroundTasks.add_task(schedule_task, id=id)
 
 
 @router.get("/download/zip", response_model=str)
