@@ -100,9 +100,8 @@ async def schedule_task(id: str):
         print('context')
         _queries = ExportsQueries(session=bg_session)
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
-
+        # TODO: Remove this commit after figuring out SQLAlchemy better
         await bg_session.commit()
-        print('status set')
 
 @router.post("/schedule", response_model=None)
 async def schedule_finalise(
