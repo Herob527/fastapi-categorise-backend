@@ -1,5 +1,5 @@
 import enum
-from pydantic import BaseModel, NaiveDatetime
+from pydantic import BaseModel, NaiveDatetime, UUID4
 from sqlalchemy import Column, DateTime, String, Enum, Uuid
 
 from ..database import Base
@@ -24,6 +24,7 @@ class Exports(Base):
 
 
 class ExportModel(BaseModel):
+    id: UUID4
     status: ExportStatus
     created_at: NaiveDatetime
     updated_at: NaiveDatetime
