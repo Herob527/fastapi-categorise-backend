@@ -3,7 +3,7 @@ name = "main.py"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.12,<4"
+requires-python = ">=3.13,<4"
 authors = [{ name = "Herob" }]
 dependencies = [
   "aiosqlite>=0.20.0,<0.21",
