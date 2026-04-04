@@ -17,6 +17,11 @@ class ExportsQueries:
         result = await self.session.scalar(stmt)
         return result is not None
 
+    async def get_all(self):
+        stmt = select(Exports)
+        result = (await self.session.scalars(stmt)).all()
+        return result
+
     async def schedule(self, id: str, categories: list[str] | None = None):
         self.session.add(Exports(id=id, status=ExportStatus.PENDING))
         entries = (
@@ -34,6 +39,13 @@ class ExportsQueries:
         await self.session.execute(
             update(Exports).where(Exports.id == id).values(status=status)
         )
+        await self.session.commit()
+
+    async def set_archive_url(self, id: str, url: str):
+        await self.session.execute(
+            update(Exports).where(Exports.id == id).values(archive_url=url)
+        )
+        await self.session.commit()
 
     async def remove(self, id: str):
         pass

@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
-from database_handle.models.exports import ExportStatus
+from database_handle.models.exports import ExportModel, ExportStatus
 from database_handle.queries.bindings import get_all_bindings
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
@@ -91,23 +91,36 @@ class ScheduleData(BaseModel):
     categories: list[str] | None = None
 
 
-
 async def schedule_task(id: str, categories: list[str] = [], skip_empty: bool = False):
-    print('scheduled')
+    print("scheduled")
     from database_handle.database import get_sessionmanager
+    import zipfile
 
     async with get_sessionmanager().session() as bg_session:
-        print('context')
+        print("context")
         _queries = ExportsQueries(session=bg_session)
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
-        # TODO: Remove this commit after figuring out SQLAlchemy better
-        await bg_session.commit()
 
-        for category in categories:
-            res = await get_all_bindings(bg_session, category_name=category, skip_empty=skip_empty)
-            for binding in res:
-                file = await minio_service.minio_service.download_file(binding.audio.url)
+        content = io.BytesIO()
+        with zipfile.ZipFile(content, mode="w", compression=zipfile.ZIP_STORED) as zf:
+            for category in categories:
+                res = await get_all_bindings(
+                    bg_session, category_id=category, skip_empty=skip_empty
+                )
+                for binding in res:
+                    file = await minio_service.minio_service.download_file(
+                        binding.audio.url
+                    )
+                    zf.writestr(f"{category}/{binding.audio.file_name}", file)
 
+        size = content.tell()
+        content.seek(0)
+        print(f"{size / 1024 / 1024:.2f} MB")
+        await minio_service.minio_service.upload_file(
+            content, OUTPUT_ARCHIVE, size, content_type="application/zip"
+        )
+        await _queries.set_archive_url(id, OUTPUT_ARCHIVE)
+        await _queries.set_status(id, ExportStatus.COMPLETED)
 
 
 @router.post("/schedule", response_model=None)
@@ -122,6 +135,14 @@ async def schedule_finalise(
     await queries.schedule(id, categories)
 
     backgroundTasks.add_task(schedule_task, id=id, categories=categories or [])
+
+
+@router.get("/status", response_model=list[ExportModel])
+async def get_statuses(
+    queries: ExportsQueries = Depends(get_exports_queries),
+):
+    statuses = await queries.get_all()
+    return statuses
 
 
 @router.get("/download/zip", response_model=str)

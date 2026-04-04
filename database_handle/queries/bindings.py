@@ -23,7 +23,10 @@ TextAlias = aliased(Text, name="text")
 
 
 async def get_all_bindings(
-    db: AsyncSession, category_name: str | None = None, skip_empty: bool = False
+    db: AsyncSession,
+    category_name: str | None = None,
+    category_id: str | None = None,
+    skip_empty: bool = False,
 ):
 
     stmt = (
@@ -36,6 +39,8 @@ async def get_all_bindings(
 
     if category_name:
         stmt = stmt.where(CategoryAlias.name == category_name)
+    if category_id:
+        stmt = stmt.where(CategoryAlias.id == category_id)
     if skip_empty:
         stmt = stmt.where(func.trim(TextAlias.text) != "")
 
