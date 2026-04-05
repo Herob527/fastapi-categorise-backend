@@ -151,8 +151,7 @@ async def schedule_finalise(
 async def get_statuses(
     queries: ExportsQueries = Depends(get_exports_queries),
 ):
-    statuses = await queries.get_all()
-    return statuses
+    return await queries.get_all()
 
 
 @router.get("/download/{export_id}")
