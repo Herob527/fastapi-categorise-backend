@@ -41,6 +41,8 @@ async def get_all_bindings(
         stmt = stmt.where(CategoryAlias.name == category_name)
     if category_id:
         stmt = stmt.where(CategoryAlias.id == category_id)
+    if category_id is None:
+        stmt = stmt.where(CategoryAlias.id == None)
     if skip_empty:
         stmt = stmt.where(func.trim(TextAlias.text) != "")
 

@@ -24,7 +24,7 @@ from uuid import uuid4
 
 
 class CategoryData(TypedDict):
-    id: str
+    id: str | None
     original_name: str
     bindings: list[BindingModel]
 
@@ -49,7 +49,14 @@ async def generate_preview(
     category_mapping: dict[str, CategoryData] = {}
 
     for binding in bindings:
-        category_id = str(binding.category.id) if binding.category else "uncategorized"
+        category_id = str(binding.category.id) if binding.category else None
+        if category_id is None:
+            category_mapping[config.uncategorized_name] = CategoryData(
+                id=None,
+                original_name=config.uncategorized_name,
+                bindings=[],
+            )
+            continue
         category_name = (
             binding.category.name if binding.category else config.uncategorized_name
         )
@@ -88,10 +95,12 @@ async def generate_preview(
 
 
 class ScheduleData(BaseModel):
-    categories: list[str] | None = None
+    categories: list[str | None] | None = None
 
 
-async def schedule_task(id: str, categories: list[str] = [], skip_empty: bool = False):
+async def schedule_task(
+    id: str, categories: list[str | None] = [], skip_empty: bool = False
+):
     print("scheduled")
     from database_handle.database import get_sessionmanager
     import zipfile
