@@ -11,8 +11,6 @@ from datetime import timedelta
 
 __all__ = ["minio_service"]
 
-print(os.getenv("MINIO_ENDPOINT", "minio:9000"))
-
 
 class MinIOService:
     bucket_name: str
