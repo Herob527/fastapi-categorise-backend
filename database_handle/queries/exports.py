@@ -18,7 +18,7 @@ class ExportsQueries:
         return result is not None
 
     async def get_all(self):
-        stmt = select(Exports)
+        stmt = select(Exports).order_by(Exports.created_at.desc())
         result = (await self.session.scalars(stmt)).all()
         return result
 
