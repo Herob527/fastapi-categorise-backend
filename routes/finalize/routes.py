@@ -104,12 +104,10 @@ async def schedule_task(
     config: FinaliseConfigModel,
     categories: list[str | None] = [],
 ):
-    print("scheduled")
     from database_handle.database import get_sessionmanager
     import zipfile
 
     async with get_sessionmanager().session() as bg_session:
-        print("context")
         _queries = ExportsQueries(session=bg_session)
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
 
@@ -136,7 +134,6 @@ async def schedule_task(
 
         size = content.tell()
         content.seek(0)
-        print(f"{size / 1024 / 1024:.2f} MB")
         upload_name = f"{id}_{OUTPUT_ARCHIVE}"
         await minio_service.minio_service.upload_file(
             content, upload_name, size, content_type="application/zip"
@@ -175,10 +172,7 @@ async def get_statuses(
 @router.get("/download/{export_id}")
 async def download_finalized_zip(export_id: str):
     service = minio_service.minio_service
-    print("pre-download")
     zip_file = await service.download_file(f"{export_id}_{OUTPUT_ARCHIVE}")
-    print("post-download")
     zip_bytes = io.BytesIO(zip_file)
-    print("post-bytes")
     # Return the zip file as a streaming response
     return StreamingResponse(zip_bytes, media_type="application/zip")
