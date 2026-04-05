@@ -19,6 +19,7 @@ from database_handle.queries.bindings import get_all_bindings
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE
+from routes.finalize.utils import process_line, process_transcript
 from services import minio_service
 from uuid import uuid4
 
@@ -99,7 +100,9 @@ class ScheduleData(BaseModel):
 
 
 async def schedule_task(
-    id: str, categories: list[str | None] = [], skip_empty: bool = False
+    id: str,
+    config: FinaliseConfigModel,
+    categories: list[str | None] = [],
 ):
     print("scheduled")
     from database_handle.database import get_sessionmanager
@@ -114,13 +117,22 @@ async def schedule_task(
         with zipfile.ZipFile(content, mode="w", compression=zipfile.ZIP_STORED) as zf:
             for category in categories:
                 res = await get_all_bindings(
-                    bg_session, category_id=category, skip_empty=skip_empty
+                    bg_session,
+                    category_id=category,
+                    skip_empty=config.omit_empty,
+                    include_none=category is None,
                 )
+                text_lines = []
                 for binding in res:
                     file = await minio_service.minio_service.download_file(
                         binding.audio.url
                     )
                     zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                    text_lines.append(
+                        process_line(binding, config, indexed_categories=None)
+                    )
+
+                zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
 
         size = content.tell()
         content.seek(0)
@@ -136,15 +148,21 @@ async def schedule_task(
 @router.post("/schedule", response_model=None)
 async def schedule_finalise(
     backgroundTasks: BackgroundTasks,
+    config: FinaliseConfigModel,
     params: ScheduleData | None = None,
     queries: ExportsQueries = Depends(get_exports_queries),
 ):
     categories = params.categories if params is not None else None
 
     id = str(uuid4())
-    await queries.schedule(id, categories)
+    await queries.schedule(
+        id,
+        categories,
+    )
 
-    backgroundTasks.add_task(schedule_task, id=id, categories=categories or [])
+    backgroundTasks.add_task(
+        schedule_task, id=id, categories=categories or [], config=config
+    )
 
 
 @router.get("/status", response_model=list[ExportModel])
