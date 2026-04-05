@@ -116,10 +116,11 @@ async def schedule_task(id: str, categories: list[str] = [], skip_empty: bool = 
         size = content.tell()
         content.seek(0)
         print(f"{size / 1024 / 1024:.2f} MB")
+        upload_name = f"{id}_{OUTPUT_ARCHIVE}"
         await minio_service.minio_service.upload_file(
-            content, OUTPUT_ARCHIVE, size, content_type="application/zip"
+            content, upload_name, size, content_type="application/zip"
         )
-        await _queries.set_archive_url(id, OUTPUT_ARCHIVE)
+        await _queries.set_archive_url(id, upload_name)
         await _queries.set_status(id, ExportStatus.COMPLETED)
 
 
@@ -145,16 +146,11 @@ async def get_statuses(
     return statuses
 
 
-@router.get("/download/zip", response_model=str)
-async def download_finalized_zip():
-    """
-    Downloads all finalized files from the temp directory as a zip file.
-    """
-
+@router.get("/download/{export_id}")
+async def download_finalized_zip(export_id: str):
     service = minio_service.minio_service
-
     print("pre-download")
-    zip_file = await service.download_file(OUTPUT_ARCHIVE)
+    zip_file = await service.download_file(f"{export_id}_{OUTPUT_ARCHIVE}")
     print("post-download")
     zip_bytes = io.BytesIO(zip_file)
     print("post-bytes")
