@@ -22,7 +22,7 @@ class ExportsQueries:
         result = (await self.session.scalars(stmt)).all()
         return result
 
-    async def schedule(self, id: str, categories: list[str] | None = None):
+    async def schedule(self, id: str, categories: list[str | None] | None = None):
         self.session.add(Exports(id=id, status=ExportStatus.PENDING))
         entries = (
             [
