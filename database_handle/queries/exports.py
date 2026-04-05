@@ -47,6 +47,10 @@ class ExportsQueries:
         )
         await self.session.commit()
 
+    async def get_archive(self, id: str):
+        res = await self.session.execute(select(Exports).where(Exports.id == id))
+        return str(res.scalar_one().archive_url)
+
     async def remove(self, id: str):
         pass
 

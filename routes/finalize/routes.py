@@ -170,9 +170,13 @@ async def get_statuses(
 
 
 @router.get("/download/{export_id}")
-async def download_finalized_zip(export_id: str):
+async def download_finalized_zip(
+    export_id: str,
+    queries: ExportsQueries = Depends(get_exports_queries),
+):
     service = minio_service.minio_service
-    zip_file = await service.download_file(f"{export_id}_{OUTPUT_ARCHIVE}")
+    archive_url = await queries.get_archive(export_id)
+    zip_file = await service.download_file(archive_url)
     zip_bytes = io.BytesIO(zip_file)
     # Return the zip file as a streaming response
     return StreamingResponse(zip_bytes, media_type="application/zip")
