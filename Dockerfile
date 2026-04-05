@@ -9,14 +9,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY pyproject.toml uv.lock /app/
 
 # Install dependencies
-RUN uv sync --frozen --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-install-project
 
 FROM base AS dev
 
 COPY . /app
 
 # Install the project
-RUN uv sync --frozen
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen
 
 EXPOSE 80
 
