@@ -10,5 +10,5 @@ class ExportsCategories(Base):
     export_id = Column(
         Uuid, ForeignKey("exports.id", ondelete="CASCADE"), nullable=False
     )
-    category_id = Column(Uuid, ForeignKey("categories.id"), nullable=False)
+    category_id = Column(Uuid, ForeignKey("categories.id"), nullable=True)
     category = relationship("Category")
