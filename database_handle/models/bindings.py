@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 from database_handle.models.audios import AudioModel
 from database_handle.models.categories import CategoryModel
+from database_handle.models.pagination import Paginated, PaginationModel
 from database_handle.models.texts import TextModel
 
 from ..database import Base
@@ -35,17 +36,6 @@ class Binding(Base):
     text = relationship("Text")
 
 
-class PaginationModel(BaseModel):
-    total: int
-    current_page: int
-    total_pages: int
-    per_page: int
-    has_next: bool
-    has_previous: bool
-    next_page: int | None = None
-    previous_page: int | None = None
-
-
 class BindingEntry(BaseModel):
     id: UUID4
     category_id: UUID4 | None
@@ -66,7 +56,4 @@ class BindingModel(BaseModel):
         from_attributes = True
 
 
-class PaginatedBindingModel(BaseModel):
-    bindings: List[BindingModel]
-    pagination: PaginationModel
-    page: int
+PaginatedBindingModel = Paginated[BindingModel]

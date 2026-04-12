@@ -24,6 +24,8 @@ class Exports(Base):
 
 
 class ExportModel(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: UUID4
     status: ExportStatus
     created_at: NaiveDatetime

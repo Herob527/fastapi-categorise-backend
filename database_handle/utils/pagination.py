@@ -5,7 +5,7 @@ from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
-from database_handle.models.bindings import PaginationModel
+from database_handle.models.pagination import PaginationModel
 
 
 async def with_paginated[T](

@@ -10,11 +10,13 @@ from pathlib import Path
 from typing import TypedDict
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
+from database_handle.models.pagination import Paginated
 from database_handle.queries.bindings import get_all_bindings
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
@@ -162,11 +164,13 @@ async def schedule_finalise(
     )
 
 
-@router.get("/status", response_model=list[ExportModel])
+@router.get("/status", response_model=Paginated[ExportModel])
 async def get_statuses(
+    page: int = 0,
+    limit: int = 20,
     queries: ExportsQueries = Depends(get_exports_queries),
 ):
-    return await queries.get_all()
+    return await queries.get_paginated(page, limit)
 
 
 @router.get("/download/{export_id}")
@@ -180,3 +184,14 @@ async def download_finalized_zip(
     zip_bytes = io.BytesIO(zip_file)
     # Return the zip file as a streaming response
     return StreamingResponse(zip_bytes, media_type="application/zip")
+
+
+@router.get("/delete-zip/{export_id}")
+async def delete_finalized_zip(
+    export_id: str,
+    queries: ExportsQueries = Depends(get_exports_queries),
+):
+    service = minio_service.minio_service
+    archive_url = await queries.get_archive(export_id)
+    await service.delete_file(archive_url)
+    await queries.delete_export(export_id)

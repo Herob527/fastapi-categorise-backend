@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from fastapi import Depends
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from database_handle.database import get_db
 from database_handle.models.exports import ExportStatus, Exports
 from database_handle.models.exports_categories import ExportsCategories
+from database_handle.models.pagination import Paginated
+from database_handle.utils.pagination import with_paginated
 from uuid import uuid4
 
 
@@ -17,10 +19,10 @@ class ExportsQueries:
         result = await self.session.scalar(stmt)
         return result is not None
 
-    async def get_all(self):
+    async def get_paginated(self, page: int = 0, limit: int = 20) -> Paginated:
         stmt = select(Exports).order_by(Exports.created_at.desc())
-        result = (await self.session.scalars(stmt)).all()
-        return result
+        items, pagination = await with_paginated(self.session, stmt, page, limit, lambda row: row[0])
+        return Paginated(items=items, pagination=pagination)
 
     async def schedule(self, id: str, categories: list[str | None] | None = None):
         self.session.add(Exports(id=id, status=ExportStatus.PENDING))
@@ -50,6 +52,10 @@ class ExportsQueries:
     async def get_archive(self, id: str):
         res = await self.session.execute(select(Exports).where(Exports.id == id))
         return str(res.scalar_one().archive_url)
+
+    async def delete_export(self, id: str):
+        await self.session.execute(delete(Exports).where(Exports.id == id))
+        await self.session.commit()
 
     async def remove(self, id: str):
         pass
