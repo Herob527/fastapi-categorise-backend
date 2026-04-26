@@ -24,6 +24,15 @@ class DirectoryModel(BaseModel):
     def _append(self, dir: DirectoryModel, file: FileModel):
         dir.files.append(file)
 
+    def get_or_create_dir(self, dir_name: str):
+        for i in self.files:
+            if isinstance(i, DirectoryModel):
+                if i.dir_name == dir_name:
+                    return i
+        model = DirectoryModel(dir_name=dir_name, files=[], is_dir=True)
+        self.files.append(model)
+        return model
+
     def append(self, file: Path, level=0, dir: DirectoryModel | None = None):
         file_name = file.name
         path_part = file.parts[level]
