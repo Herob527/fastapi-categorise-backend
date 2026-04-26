@@ -128,6 +128,13 @@ class MinIOService:
             print(f"Error downloading file: {e}")
             raise HTTPException(status_code=404, detail="File not found")
 
+    def get_object_stream(self, object_name: str):
+        try:
+            return self.client.get_object(self.bucket_name, object_name)
+        except S3Error as e:
+            print(f"Error streaming file: {e}")
+            raise HTTPException(status_code=404, detail="File not found")
+
     async def delete_file(self, object_name: str) -> bool:
         """
         Delete file from MinIO

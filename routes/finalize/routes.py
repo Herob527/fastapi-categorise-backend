@@ -5,12 +5,12 @@ Todo:
 """
 
 from __future__ import annotations
-import io
 from pathlib import Path
 from typing import TypedDict
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
@@ -242,10 +242,12 @@ async def download_finalized_zip(
 ):
     service = minio_service.minio_service
     archive_url = await queries.get_archive(export_id)
-    zip_file = await service.download_file(archive_url)
-    zip_bytes = io.BytesIO(zip_file)
-    # Return the zip file as a streaming response
-    return StreamingResponse(zip_bytes, media_type="application/zip")
+    response = service.get_object_stream(archive_url)
+    return StreamingResponse(
+        response,
+        media_type="application/zip",
+        background=BackgroundTask(response.close),
+    )
 
 
 @router.get("/delete-zip/{export_id}")
