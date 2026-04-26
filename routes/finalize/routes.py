@@ -127,7 +127,7 @@ async def schedule_task(
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
 
         with TemporaryFile("wb+") as temp:
-            with zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            with zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_STORED) as zf:
                 if config.divide_by_category:
                     for category in categories:
                         res = await get_all_bindings(
