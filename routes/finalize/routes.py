@@ -137,7 +137,7 @@ async def schedule_task(
                             include_none=category is None,
                         )
                         text_lines = []
-                        category_name: str = config.uncategorized_name
+                        category_name = config.uncategorized_name
                         for binding in res:
                             file = await minio_service.minio_service.download_file(
                                 binding.audio.url
