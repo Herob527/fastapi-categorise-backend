@@ -137,16 +137,26 @@ async def schedule_task(
                             include_none=category is None,
                         )
                         text_lines = []
+                        category_name: str = config.uncategorized_name
                         for binding in res:
                             file = await minio_service.minio_service.download_file(
                                 binding.audio.url
                             )
-                            zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                            category_name = (
+                                binding.category.name
+                                if binding.category is not None
+                                else config.uncategorized_name
+                            )
+                            zf.writestr(
+                                f"{category_name}/{binding.audio.file_name}", file
+                            )
                             text_lines.append(
                                 process_line(binding, config, indexed_categories=None)
                             )
 
-                        zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
+                        zf.writestr(
+                            f"{category_name}/transcript.txt", "\n".join(text_lines)
+                        )
                 else:
                     res = await get_all_bindings(
                         bg_session,
