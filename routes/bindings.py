@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from database_handle.models.pagination import PaginationModel
 from database_handle.models.texts import Text
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
@@ -65,8 +66,7 @@ async def get_paginated_bindings(
     )
 
     return PaginatedBindingModel(
-        bindings=bindings,
-        page=page,
+        items=bindings,
         pagination=pagination,
     )
 
