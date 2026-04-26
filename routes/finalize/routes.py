@@ -87,7 +87,8 @@ async def generate_preview(
                 category_id=data["id"],
             )
             for binding in data["bindings"]:
-                directory.append(file=Path(binding.audio.file_name))
+                dir = directory.get_or_create_dir("wavs")
+                dir.append(file=Path(binding.audio.file_name))
             directory.append(file=Path("transcript.txt"))
             files.append(directory)
     else:
@@ -104,7 +105,7 @@ async def generate_preview(
         files.append(directory)
 
     base_dir = DirectoryModel(
-        dir_name="files", files=files, is_dir=True, original_name=None
+        dir_name="wavs", files=files, is_dir=True, original_name=None
     )
 
     return base_dir
@@ -148,7 +149,7 @@ async def schedule_task(
                                 else config.uncategorized_name
                             )
                             zf.writestr(
-                                f"{category_name}/{binding.audio.file_name}", file
+                                f"{category_name}/wavs/{binding.audio.file_name}", file
                             )
                             text_lines.append(
                                 process_line(binding, config, indexed_categories=None)
