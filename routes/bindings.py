@@ -3,7 +3,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
-from database_handle.models.pagination import PaginationModel
 from database_handle.models.texts import Text
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
@@ -20,7 +19,6 @@ from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
 )
 from database_handle.queries.bindings import (
-    get_total_bindings,
     update_binding_category,
 )
 from database_handle.queries.bindings import (
@@ -33,8 +31,7 @@ from database_handle.queries.categories import (
     create_category,
     get_one_category_by_name,
 )
-from routes.audios import delete_audio, upload_audio
-from services import minio_service
+from routes.audios import delete_audio
 
 __all__ = ["router"]
 
@@ -43,11 +40,6 @@ router = APIRouter(
     prefix="/bindings",
     responses={404: {"description": "Not found"}},
 )
-
-
-@router.get("/count")
-async def get_count(db: AsyncSession = Depends(get_db)):
-    return (await get_total_bindings(db)) or 0
 
 
 @router.get("", response_model=PaginatedBindingModel)

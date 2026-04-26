@@ -91,14 +91,6 @@ async def get_paginated_bindings(db: AsyncSession, page: int = 0, limit: int = 2
     return await with_paginated(db, stmt, page, limit, transform_row)
 
 
-async def get_total_bindings(db: AsyncSession):
-    stmt = select(func.count("*")).select_from(Binding)
-
-    result = (await db.scalar(stmt)) or 0
-
-    return PaginationModel(total=result)
-
-
 async def create_binding(db: AsyncSession, binding: Binding):
     db.add(binding)
 
