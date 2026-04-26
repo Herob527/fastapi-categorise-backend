@@ -42,7 +42,7 @@ def process_line(
         else 0
     )
     formatted_line = config.line_format.format(
-        file=f"files/{binding.audio.file_name}",
+        file=f"wavs/{binding.audio.file_name}",
         text=(
             binding.text.text
             if str(binding.text.text).strip() != ""
@@ -124,10 +124,10 @@ def get_paths(bindings: list[BindingModel], config: FinaliseConfigModel):
             subdir = Path(
                 subdir,
                 b.category.name if b.category else config.uncategorized_name,
-                "files",
+                "wavs",
             )
         else:
-            subdir = Path(subdir, "files")
+            subdir = Path(subdir, "wavs")
 
         yield (b.audio.url, Path(subdir, b.audio.file_name))
 
