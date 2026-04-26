@@ -75,17 +75,30 @@ async def generate_preview(
 
     files: list[FileModel | DirectoryModel] = []
 
-    for category_id, data in category_mapping.items():
-        # Process category name: replace whitespace with underscores for directory name
-        processed_name = data["original_name"].replace(" ", "_")
+    if config.divide_by_category:
+        for category_id, data in category_mapping.items():
+            # Process category name: replace whitespace with underscores for directory name
+            processed_name = data["original_name"].replace(" ", "_")
+            directory = DirectoryModel(
+                dir_name=processed_name,
+                files=[],
+                is_dir=True,
+                original_name=data["original_name"],
+                category_id=data["id"],
+            )
+            for binding in data["bindings"]:
+                directory.append(file=Path(binding.audio.file_name))
+            directory.append(file=Path("transcript.txt"))
+            files.append(directory)
+    else:
         directory = DirectoryModel(
-            dir_name=processed_name,
+            dir_name="main",
             files=[],
             is_dir=True,
-            original_name=data["original_name"],
-            category_id=data["id"],
+            original_name=None,
+            category_id=None,
         )
-        for binding in data["bindings"]:
+        for binding in bindings:
             directory.append(file=Path(binding.audio.file_name))
         directory.append(file=Path("transcript.txt"))
         files.append(directory)
@@ -115,24 +128,58 @@ async def schedule_task(
 
         content = io.BytesIO()
         with zipfile.ZipFile(content, mode="w", compression=zipfile.ZIP_STORED) as zf:
-            for category in categories:
+            if config.divide_by_category:
+                for category in categories:
+                    res = await get_all_bindings(
+                        bg_session,
+                        category_id=category,
+                        skip_empty=config.omit_empty,
+                        include_none=category is None,
+                    )
+                    text_lines = []
+                    for binding in res:
+                        file = await minio_service.minio_service.download_file(
+                            binding.audio.url
+                        )
+                        zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                        text_lines.append(
+                            process_line(binding, config, indexed_categories=None)
+                        )
+
+                    zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
+            else:
                 res = await get_all_bindings(
                     bg_session,
-                    category_id=category,
                     skip_empty=config.omit_empty,
-                    include_none=category is None,
+                    include_none=False,
                 )
+
                 text_lines = []
+                indexed_categories = list[str]()
                 for binding in res:
                     file = await minio_service.minio_service.download_file(
                         binding.audio.url
                     )
-                    zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                    category_name = (
+                        binding.category.name
+                        if binding.category is not None
+                        else config.uncategorized_name
+                    )
+                    if category_name not in indexed_categories:
+                        indexed_categories.append(category_name)
+
+                    zf.writestr(binding.audio.file_name, file)
                     text_lines.append(
-                        process_line(binding, config, indexed_categories=None)
+                        process_line(
+                            binding,
+                            config,
+                            indexed_categories={
+                                k: v for v, k in enumerate(indexed_categories)
+                            },
+                        )
                     )
 
-                zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
+                zf.writestr("transcript.txt", "\n".join(text_lines))
 
         size = content.tell()
         content.seek(0)
