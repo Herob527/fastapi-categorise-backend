@@ -1,16 +1,12 @@
-from uuid import uuid4
-from pprint import pprint
 from fastapi import APIRouter, BackgroundTasks, UploadFile, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 import librosa
 from pydantic import UUID4
-from sqlalchemy.orm.query import sql
 from sqlalchemy.sql.expression import select
 from database_handle.database import get_db
-from database_handle.models.audios import Audio, AudioModel, StatusEnum
+from database_handle.models.audios import Audio, StatusEnum
 from database_handle.queries.audios import AudioQueries
 from services.minio_service import minio_service
 

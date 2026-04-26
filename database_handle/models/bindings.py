@@ -1,4 +1,3 @@
-from typing import List
 from pydantic import BaseModel
 from pydantic.types import UUID4
 from sqlalchemy import Column, ForeignKey, Uuid
@@ -6,7 +5,7 @@ from sqlalchemy.orm import relationship
 
 from database_handle.models.audios import AudioModel
 from database_handle.models.categories import CategoryModel
-from database_handle.models.pagination import Paginated, PaginationModel
+from database_handle.models.pagination import Paginated
 from database_handle.models.texts import TextModel
 
 from ..database import Base

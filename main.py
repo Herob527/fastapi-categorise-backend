@@ -64,7 +64,9 @@ async def health():
             await conn.execute(text("SELECT 1"))
         return {"status": "ok"}
     except Exception as e:
-        return JSONResponse(status_code=503, content={"status": "unavailable", "detail": str(e)})
+        return JSONResponse(
+            status_code=503, content={"status": "unavailable", "detail": str(e)}
+        )
 
 
 @app.get("/")

@@ -21,7 +21,9 @@ class ExportsQueries:
 
     async def get_paginated(self, page: int = 0, limit: int = 20) -> Paginated:
         stmt = select(Exports).order_by(Exports.created_at.desc())
-        items, pagination = await with_paginated(self.session, stmt, page, limit, lambda row: row[0])
+        items, pagination = await with_paginated(
+            self.session, stmt, page, limit, lambda row: row[0]
+        )
         return Paginated(items=items, pagination=pagination)
 
     async def schedule(self, id: str, categories: list[str | None] | None = None):

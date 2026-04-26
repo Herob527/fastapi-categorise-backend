@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import Enum
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update

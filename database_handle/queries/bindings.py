@@ -9,7 +9,6 @@ from database_handle.models.bindings import (
     Binding,
     BindingEntry,
     BindingModel,
-    PaginationModel,
 )
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
@@ -43,7 +42,7 @@ async def get_all_bindings(
     if category_id:
         stmt = stmt.where(CategoryAlias.id == category_id)
     if include_none and category_id is None:
-        stmt = stmt.where(CategoryAlias.id == None)
+        stmt = stmt.where(CategoryAlias.id.is_(None))
     if skip_empty:
         stmt = stmt.where(func.trim(TextAlias.text) != "")
 

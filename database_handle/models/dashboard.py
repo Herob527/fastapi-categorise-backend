@@ -2,6 +2,7 @@ from typing import Tuple
 
 from pydantic import BaseModel
 
+
 class DashboardModel(BaseModel):
     categories_count: int
     total_bindings_count: int

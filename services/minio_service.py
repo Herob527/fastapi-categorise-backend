@@ -6,7 +6,6 @@ from minio import Minio
 from minio.commonconfig import CopySource
 from minio.error import S3Error
 from fastapi import HTTPException
-import uuid
 from datetime import timedelta
 
 __all__ = ["minio_service"]
@@ -95,14 +94,6 @@ class MinIOService:
         Upload file to MinIO and return the object name
         """
         try:
-            # Generate unique filename to avoid conflicts
-            file_extension = filename.split(".")[-1] if "." in filename else ""
-            unique_filename = (
-                f"{uuid.uuid4()}.{file_extension}"
-                if file_extension
-                else str(uuid.uuid4())
-            )
-
             # TODO: Figure out some better way to handle non-unique filenames
             # Maybe just require them instead
             object_name = f"{folder}/{filename}" if folder else filename

@@ -32,10 +32,7 @@ class DatabaseSessionManager:
 
         self._engine = create_async_engine(host, **default_kwargs)
         self._sessionmaker = async_sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            expire_on_commit=False,
-            bind=self._engine
+            autocommit=False, autoflush=False, expire_on_commit=False, bind=self._engine
         )
 
     async def close(self):

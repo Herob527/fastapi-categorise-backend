@@ -24,7 +24,6 @@ from routes.finalize.utils import process_line
 from services import minio_service
 from uuid import uuid4
 from tempfile import TemporaryFile
-from pprint import pprint
 
 
 class CategoryData(TypedDict):
