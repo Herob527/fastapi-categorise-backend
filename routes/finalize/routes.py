@@ -24,6 +24,7 @@ from routes.finalize.utils import process_line
 from services import minio_service
 from uuid import uuid4
 from tempfile import TemporaryFile
+from pprint import pprint
 
 
 class CategoryData(TypedDict):
@@ -54,11 +55,14 @@ async def generate_preview(
     for binding in bindings:
         category_id = str(binding.category.id) if binding.category else None
         if category_id is None:
-            category_mapping[config.uncategorized_name] = CategoryData(
-                id=None,
-                original_name=config.uncategorized_name,
-                bindings=[],
-            )
+            if category_mapping.get(config.uncategorized_name) is None:
+                category_mapping[config.uncategorized_name] = CategoryData(
+                    id=None,
+                    original_name=config.uncategorized_name,
+                    bindings=[binding],
+                )
+            else:
+                category_mapping[config.uncategorized_name]["bindings"].append(binding)
             continue
         category_name = (
             binding.category.name if binding.category else config.uncategorized_name
@@ -74,6 +78,7 @@ async def generate_preview(
         category_mapping[category_id]["bindings"].append(binding)
 
     files: list[FileModel | DirectoryModel] = []
+    print(category_mapping)
 
     if config.divide_by_category:
         for category_id, data in category_mapping.items():
