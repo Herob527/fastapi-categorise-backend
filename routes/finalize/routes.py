@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TypedDict
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
-from sqlalchemy import delete
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.responses import StreamingResponse
 from database_handle.database import get_db
@@ -21,9 +20,10 @@ from database_handle.queries.bindings import get_all_bindings
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE
-from routes.finalize.utils import process_line, process_transcript
+from routes.finalize.utils import process_line
 from services import minio_service
 from uuid import uuid4
+from tempfile import TemporaryFile
 
 
 class CategoryData(TypedDict):
@@ -126,69 +126,69 @@ async def schedule_task(
         _queries = ExportsQueries(session=bg_session)
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)
 
-        content = io.BytesIO()
-        with zipfile.ZipFile(content, mode="w", compression=zipfile.ZIP_STORED) as zf:
-            if config.divide_by_category:
-                for category in categories:
+        with TemporaryFile("wb+") as temp:
+            with zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+                if config.divide_by_category:
+                    for category in categories:
+                        res = await get_all_bindings(
+                            bg_session,
+                            category_id=category,
+                            skip_empty=config.omit_empty,
+                            include_none=category is None,
+                        )
+                        text_lines = []
+                        for binding in res:
+                            file = await minio_service.minio_service.download_file(
+                                binding.audio.url
+                            )
+                            zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                            text_lines.append(
+                                process_line(binding, config, indexed_categories=None)
+                            )
+
+                        zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
+                else:
                     res = await get_all_bindings(
                         bg_session,
-                        category_id=category,
                         skip_empty=config.omit_empty,
-                        include_none=category is None,
+                        include_none=False,
                     )
+
                     text_lines = []
+                    indexed_categories = list[str]()
                     for binding in res:
                         file = await minio_service.minio_service.download_file(
                             binding.audio.url
                         )
-                        zf.writestr(f"{category}/{binding.audio.file_name}", file)
+                        category_name = (
+                            binding.category.name
+                            if binding.category is not None
+                            else config.uncategorized_name
+                        )
+                        if category_name not in indexed_categories:
+                            indexed_categories.append(category_name)
+
+                        zf.writestr(binding.audio.file_name, file)
                         text_lines.append(
-                            process_line(binding, config, indexed_categories=None)
+                            process_line(
+                                binding,
+                                config,
+                                indexed_categories={
+                                    k: v for v, k in enumerate(indexed_categories)
+                                },
+                            )
                         )
 
-                    zf.writestr(f"{category}/transcript.txt", "\n".join(text_lines))
-            else:
-                res = await get_all_bindings(
-                    bg_session,
-                    skip_empty=config.omit_empty,
-                    include_none=False,
-                )
+                    zf.writestr("transcript.txt", "\n".join(text_lines))
 
-                text_lines = []
-                indexed_categories = list[str]()
-                for binding in res:
-                    file = await minio_service.minio_service.download_file(
-                        binding.audio.url
-                    )
-                    category_name = (
-                        binding.category.name
-                        if binding.category is not None
-                        else config.uncategorized_name
-                    )
-                    if category_name not in indexed_categories:
-                        indexed_categories.append(category_name)
-
-                    zf.writestr(binding.audio.file_name, file)
-                    text_lines.append(
-                        process_line(
-                            binding,
-                            config,
-                            indexed_categories={
-                                k: v for v, k in enumerate(indexed_categories)
-                            },
-                        )
-                    )
-
-                zf.writestr("transcript.txt", "\n".join(text_lines))
-
-        size = content.tell()
-        content.seek(0)
-        upload_name = f"{id}_{OUTPUT_ARCHIVE}"
-        await minio_service.minio_service.upload_file(
-            content, upload_name, size, content_type="application/zip"
-        )
-        await _queries.set_archive_url(id, upload_name)
-        await _queries.set_status(id, ExportStatus.COMPLETED)
+            size = temp.tell()
+            temp.seek(0)
+            upload_name = f"{id}_{OUTPUT_ARCHIVE}"
+            await minio_service.minio_service.upload_file(
+                temp, upload_name, size, content_type="application/zip"
+            )
+            await _queries.set_archive_url(id, upload_name)
+            await _queries.set_status(id, ExportStatus.COMPLETED)
 
 
 @router.post("/schedule", response_model=None)
