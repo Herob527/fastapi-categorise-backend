@@ -28,6 +28,13 @@ class MinIOService:
         self.endpoint = os.getenv("MINIO_ENDPOINT", "nginx-minio:9010")
         self._ensure_bucket_exists()
 
+    def listen_to_bucket(self):
+        return self.client.listen_bucket_notification(
+            self.bucket_name,
+            prefix="",
+            events=("s3:ObjectCreated:*", "s3:ObjectRemoved:*"),
+        )
+
     def file_exists(self, filename):
         return (
             self.client.stat_object(self.bucket_name, filename).content_type is not None
