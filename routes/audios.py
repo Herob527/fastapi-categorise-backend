@@ -9,8 +9,21 @@ from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 from database_handle.queries.audios import AudioQueries
 from services.minio_service import minio_service
+from database_handle.database import get_sessionmanager
 
 router = APIRouter(prefix="/audio", tags=["audio"])
+
+"""
+Idea:
+
+1. Upload just data into DB with status and return presigned upload URL to S3-compatible service
+
+Solutions:
+a) Run background task that'll poll for audios with status "waiting"
+b) Check webhooks
+
+
+"""
 
 
 @router.post("/upload")
@@ -36,33 +49,26 @@ async def upload_audio(
         file_name = file.filename
         content_type = file.content_type
 
-        async def upload():
-            # Create a new session for the background task
-            from database_handle.database import get_sessionmanager
+        # Upload to MinIO using BytesIO
+        object_name = await minio_service.upload_file(
+            file_data=BytesIO(file_content),
+            size=file_size,
+            filename=file_name,
+            content_type=content_type,
+            folder=folder,
+        )
 
-            async with get_sessionmanager().session() as bg_session:
-                # Upload to MinIO using BytesIO
-                object_name = await minio_service.upload_file(
-                    file_data=BytesIO(file_content),
-                    size=file_size,
-                    filename=file_name,
-                    content_type=content_type,
-                    folder=folder,
-                )
+        # Load audio file and extract metadata using the same content
+        y, sr = librosa.load(BytesIO(file_content), sr=None)
+        audio_length = librosa.get_duration(y=y, sr=sr)
 
-                # Load audio file and extract metadata using the same content
-                y, sr = librosa.load(BytesIO(file_content), sr=None)
-                audio_length = librosa.get_duration(y=y, sr=sr)
-
-                await AudioQueries(session=bg_session).update_audio(
-                    audio_id=uuid,
-                    url=object_name,
-                    audio_length=audio_length,
-                    status=StatusEnum.available,
-                )
-                await bg_session.commit()
-
-        background_tasks.add_task(upload)
+        await AudioQueries(session=db).update_audio(
+            audio_id=uuid,
+            url=object_name,
+            audio_length=audio_length,
+            status=StatusEnum.available,
+        )
+        await db.commit()
 
     except Exception as e:
         await db.rollback()
