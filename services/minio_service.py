@@ -8,6 +8,8 @@ from minio.error import S3Error
 from fastapi import HTTPException
 from datetime import timedelta
 
+from minio.helpers import DictType
+
 __all__ = ["minio_service"]
 
 
@@ -96,6 +98,7 @@ class MinIOService:
         size: int,
         content_type: str = "application/octet-stream",
         folder: str = "",
+        metadata: DictType | None = None,
     ) -> str:
         """
         Upload file to MinIO and return the object name
@@ -113,6 +116,7 @@ class MinIOService:
                 data=file_data,
                 length=size,
                 content_type=content_type,
+                metadata=metadata,
             )
 
             return object_name
