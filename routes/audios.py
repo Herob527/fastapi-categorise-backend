@@ -9,7 +9,6 @@ from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 from database_handle.queries.audios import AudioQueries
 from services.minio_service import minio_service
-from database_handle.database import get_sessionmanager
 
 router = APIRouter(prefix="/audio", tags=["audio"])
 
@@ -32,7 +31,6 @@ async def upload_audio(
     uuid: UUID4,
     folder: str = "audio",
     db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     """Upload audio file to MinIO and save metadata to database"""
     try:
@@ -56,6 +54,7 @@ async def upload_audio(
             filename=file_name,
             content_type=content_type,
             folder=folder,
+            metadata={"uuid": str(uuid)},
         )
 
         # Load audio file and extract metadata using the same content
