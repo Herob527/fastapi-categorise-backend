@@ -11,11 +11,18 @@ class AudioQueries:
     session: AsyncSession
 
     async def update_audio(
-        self, audio_id: UUID4, audio_length: float, status: StatusEnum, url: str
+        self,
+        audio_id: UUID4,
+        status: StatusEnum,
+        audio_length: float | None = None,
+        url: str | None = None,
     ):
+        args: dict[str, str | float | StatusEnum] = {"audio_status": status}
+        if audio_length is not None:
+            args["audio_length"] = audio_length
+        if url is not None:
+            args["url"] = url
         await self.session.execute(
-            update(Audio)
-            .where(Audio.id == audio_id)
-            .values(audio_length=audio_length, audio_status=status, url=url)
+            update(Audio).where(Audio.id == audio_id).values(**args)
         )
         await self.session.commit()
