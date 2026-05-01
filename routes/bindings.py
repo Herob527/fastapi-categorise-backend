@@ -4,7 +4,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from database_handle.models.texts import Text
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic.types import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
