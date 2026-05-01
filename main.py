@@ -46,7 +46,8 @@ origins = "https?://localhost:.+"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(asyncio.to_thread(listen_to_minio))
+    loop = asyncio.get_event_loop()
+    task = asyncio.create_task(asyncio.to_thread(listen_to_minio, loop))
     yield
     task.cancel()
     await asyncio.gather(task, return_exceptions=True)
