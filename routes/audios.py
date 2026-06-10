@@ -25,11 +25,11 @@ b) Check webhooks
 """
 
 
-@router.post("/upload")
+@router.post("/upload", response_model=str)
 async def upload_audio(
     file: UploadFile,
     uuid: UUID4,
-    folder: str = "audio",
+    # folder: str = "audio",
     db: AsyncSession = Depends(get_db),
 ):
     """Upload audio file to MinIO and save metadata to database"""
@@ -43,18 +43,19 @@ async def upload_audio(
             raise HTTPException(status_code=400, detail="Only audio files are allowed")
 
         file_content = await file.read()
-        file_size = len(file_content)
+        # file_size = len(file_content)
         file_name = file.filename
-        content_type = file.content_type
+        # content_type = file.content_type
 
         # Upload to MinIO using BytesIO
-        object_name = await minio_service.upload_file(
-            file_data=BytesIO(file_content),
-            size=file_size,
-            filename=file_name,
-            content_type=content_type,
-            folder=folder,
-            metadata={"uuid": str(uuid)},
+        upload_url = minio_service.get_upload_url(
+            object_name=f"__{uuid}__{file_name}",
+            # file_data=BytesIO(file_content),
+            # size=file_size,
+            # filename=file_name,
+            # content_type=content_type,
+            # folder=folder,
+            # metadata={"uuid": str(uuid)},
         )
 
         # Load audio file and extract metadata using the same content
@@ -63,13 +64,14 @@ async def upload_audio(
 
         await AudioQueries(session=db).update_audio(
             audio_id=uuid,
-            url=object_name,
             audio_length=audio_length,
-            status=StatusEnum.available,
+            status=StatusEnum.waiting,
         )
         await db.commit()
+        return upload_url.replace("nginx-minio:9010", "localhost:9010")
 
     except Exception as e:
+        print(e)
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
