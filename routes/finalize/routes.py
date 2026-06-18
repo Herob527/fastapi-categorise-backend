@@ -77,7 +77,6 @@ async def generate_preview(
         category_mapping[category_id]["bindings"].append(binding)
 
     files: list[FileModel | DirectoryModel] = []
-    print(category_mapping)
 
     if config.divide_by_category:
         for category_id, data in category_mapping.items():
