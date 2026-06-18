@@ -1,11 +1,8 @@
-import asyncio
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from database_handle.database import engine, sessionmanager
-from database_handle.jobs.listen_to_minio import listen_to_minio
 from database_handle.models import (
     audios,
     bindings,
@@ -44,16 +41,7 @@ exports_categories.Base.metadata.create_all(engine)
 origins = "https?://localhost:.+"
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    loop = asyncio.get_event_loop()
-    task = asyncio.create_task(asyncio.to_thread(listen_to_minio, loop))
-    yield
-    task.cancel()
-    await asyncio.gather(task, return_exceptions=True)
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
