@@ -116,13 +116,10 @@ async def get_audio_url(
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    print(audio_record.url)
     # Extract object name from stored URL
     object_name = audio_record.url.split(f"{minio_service.bucket_name}/")[-1]
-    print(object_name)
 
     url = await minio_service.get_file_url(object_name, expires)
-    print(url)
 
     return {"url": url, "expires_in": expires}
 
