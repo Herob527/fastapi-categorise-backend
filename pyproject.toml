@@ -6,15 +6,15 @@ readme = "README.md"
 requires-python = ">=3.13,<4"
 authors = [{ name = "Herob" }]
 dependencies = [
-  "aiosqlite>=0.20.0,<0.21",
-  "fastapi>=0.121.1,<0.122",
+  "aiosqlite>=0.20.0,<0.23",
+  "fastapi>=0.121.1,<0.138",
   "librosa>=0.11.0,<0.12",
   "minio>=7.2.20,<8",
   "psycopg[binary, pool]>=3.2.9,<4",
   "pydantic>=2.7.1,<3",
-  "python-multipart>=0.0.20,<0.0.21",
+  "python-multipart>=0.0.20,<0.1",
   "sqlalchemy>=2.0.7,<3",
-  "uvicorn>=0.38.0,<0.39",
+  "uvicorn>=0.38.0,<0.50",
 ]
 
 [tool.uv]
