@@ -132,49 +132,19 @@ async def schedule_task(
         async with get_sessionmanager().session() as bg_session:
             bindings_queries = BindingsQueries(session=bg_session)
 
-            with TemporaryFile("wb+") as temp:
-                with zipfile.ZipFile(
-                    temp, mode="w", compression=zipfile.ZIP_STORED
-                ) as zf:
-                    if config.divide_by_category:
-                        for category in categories:
-                            res = await bindings_queries.get_all(
-                                category_id=category,
-                                skip_empty=config.omit_empty,
-                                include_none=category is None,
-                            )
-                            text_lines = []
-                            category_name = config.uncategorized_name
-                            for binding in res:
-                                file = await minio_service.minio_service.download_file(
-                                    binding.audio.url
-                                )
-                                category_name = (
-                                    binding.category.name
-                                    if binding.category is not None
-                                    else config.uncategorized_name
-                                )
-                                zf.writestr(
-                                    f"{category_name}/wavs/{binding.audio.file_name}",
-                                    file,
-                                )
-                                text_lines.append(
-                                    process_line(
-                                        binding, config, indexed_categories=None
-                                    )
-                                )
-
-                            zf.writestr(
-                                f"{category_name}/transcript.txt", "\n".join(text_lines)
-                            )
-                    else:
+            with (
+                TemporaryFile("wb+") as temp,
+                zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_STORED) as zf,
+            ):
+                if config.divide_by_category:
+                    for category in categories:
                         res = await bindings_queries.get_all(
+                            category_id=category,
                             skip_empty=config.omit_empty,
-                            include_none=False,
+                            include_none=category is None,
                         )
-
                         text_lines = []
-                        indexed_categories = list[str]()
+                        category_name = config.uncategorized_name
                         for binding in res:
                             file = await minio_service.minio_service.download_file(
                                 binding.audio.url
@@ -184,21 +154,49 @@ async def schedule_task(
                                 if binding.category is not None
                                 else config.uncategorized_name
                             )
-                            if category_name not in indexed_categories:
-                                indexed_categories.append(category_name)
-
-                            zf.writestr(binding.audio.file_name, file)
+                            zf.writestr(
+                                f"{category_name}/wavs/{binding.audio.file_name}",
+                                file,
+                            )
                             text_lines.append(
-                                process_line(
-                                    binding,
-                                    config,
-                                    indexed_categories={
-                                        k: v for v, k in enumerate(indexed_categories)
-                                    },
-                                )
+                                process_line(binding, config, indexed_categories=None)
                             )
 
-                        zf.writestr("transcript.txt", "\n".join(text_lines))
+                        zf.writestr(
+                            f"{category_name}/transcript.txt", "\n".join(text_lines)
+                        )
+                else:
+                    res = await bindings_queries.get_all(
+                        skip_empty=config.omit_empty,
+                        include_none=False,
+                    )
+
+                    text_lines = []
+                    indexed_categories = list[str]()
+                    for binding in res:
+                        file = await minio_service.minio_service.download_file(
+                            binding.audio.url
+                        )
+                        category_name = (
+                            binding.category.name
+                            if binding.category is not None
+                            else config.uncategorized_name
+                        )
+                        if category_name not in indexed_categories:
+                            indexed_categories.append(category_name)
+
+                        zf.writestr(binding.audio.file_name, file)
+                        text_lines.append(
+                            process_line(
+                                binding,
+                                config,
+                                indexed_categories={
+                                    k: v for v, k in enumerate(indexed_categories)
+                                },
+                            )
+                        )
+
+                    zf.writestr("transcript.txt", "\n".join(text_lines))
 
                 size = temp.tell()
                 temp.seek(0)
