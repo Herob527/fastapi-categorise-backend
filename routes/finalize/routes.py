@@ -13,11 +13,9 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
 from database_handle.models.pagination import Paginated
