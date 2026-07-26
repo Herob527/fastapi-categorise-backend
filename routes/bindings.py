@@ -92,8 +92,8 @@ async def create_binding(
                     text_id=binding_id,
                 )
             )
-            session.add(Text(id=binding_id, text=""))
-            session.add(
+            session.session.add(Text(id=binding_id, text=""))
+            session.session.add(
                 Audio(
                     id=binding_id,
                     file_name=audio.filename,
