@@ -16,7 +16,9 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[CategoryModel])
-async def get_all_categories(queries: CategoriesQueries = Depends(get_categories_queries)):
+async def get_all_categories(
+    queries: CategoriesQueries = Depends(get_categories_queries),
+):
     data = await queries.get_all()
     print(data)
     return data
