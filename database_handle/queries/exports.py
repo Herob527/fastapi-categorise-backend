@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import Depends
@@ -65,6 +66,6 @@ class ExportsQueries:
         pass
 
 
-def get_exports_queries(db: AsyncSession = Depends(get_db)) -> ExportsQueries:
+def get_exports_queries(db: Annotated[AsyncSession, Depends(get_db)]) -> ExportsQueries:
     """Dependency function to inject ExportsQueries with database session."""
     return ExportsQueries(session=db)
