@@ -25,7 +25,7 @@ from database_handle.models.pagination import Paginated
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
-from routes.finalize.constants import OUTPUT_ARCHIVE
+from routes.finalize.constants import OUTPUT_ARCHIVE, TranscriptFile
 from routes.finalize.utils import process_line
 from services import minio_service
 
@@ -94,7 +94,7 @@ async def generate_preview(
             for binding in data["bindings"]:
                 dir = directory.get_or_create_dir("wavs")
                 dir.append(file=Path(binding.audio.file_name))
-            directory.append(file=Path("transcript.txt"))
+            directory.append(file=TranscriptFile.as_path())
             files.append(directory)
     else:
         directory = DirectoryModel(
@@ -106,7 +106,7 @@ async def generate_preview(
         )
         for binding in bindings:
             directory.append(file=Path(binding.audio.file_name))
-        directory.append(file=Path("transcript.txt"))
+        directory.append(file=TranscriptFile.as_path())
         files.append(directory)
 
     base_dir = DirectoryModel(
@@ -161,10 +161,12 @@ async def schedule_task(
                             text_lines.append(
                                 process_line(binding, config, indexed_categories=None)
                             )
+                        path = TranscriptFile.as_path(
+                            category_name
+                        ).as_posix(), "\n".join(text_lines)
+                        print(path)
 
-                        zf.writestr(
-                            f"{category_name}/transcript.txt", "\n".join(text_lines)
-                        )
+                        zf.writestr(path)
                 else:
                     res = await bindings_queries.get_all(
                         skip_empty=config.omit_empty,
@@ -196,7 +198,7 @@ async def schedule_task(
                             )
                         )
 
-                    zf.writestr("transcript.txt", "\n".join(text_lines))
+                    zf.writestr(TranscriptFile.name, "\n".join(text_lines))
 
                 size = temp.tell()
                 temp.seek(0)
@@ -214,7 +216,7 @@ async def schedule_task(
         async with get_sessionmanager().session() as bg_session:
             exports_queries = ExportsQueries(session=bg_session)
             await exports_queries.set_status(id, ExportStatus.FAILED)
-            bg_session.commit()
+            await bg_session.commit()
 
 
 @router.post("/schedule", response_model=None)
