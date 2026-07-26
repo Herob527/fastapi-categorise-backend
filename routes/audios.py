@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Annotated
 
 import librosa
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
