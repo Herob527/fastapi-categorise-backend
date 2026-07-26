@@ -21,7 +21,7 @@ async def update_text(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     async with db.begin() as session:
-        queries = TextsQueries(session=session.session.session)
+        queries = TextsQueries(session=session.session)
         text = await queries.get_by_id(text_id)
         if text is None:
             return
