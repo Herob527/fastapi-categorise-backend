@@ -1,13 +1,16 @@
 from dataclasses import dataclass
+from typing import Annotated
 
+from fastapi import Depends
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
 
+from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 
 
-@dataclass()
+@dataclass
 class AudioQueries:
     session: AsyncSession
 
@@ -27,3 +30,7 @@ class AudioQueries:
             update(Audio).where(Audio.id == audio_id).values(**args)
         )
         await self.session.commit()
+
+
+def get_audio_queries(db: Annotated[AsyncSession, Depends(get_db)]) -> AudioQueries:
+    return AudioQueries(session=db)

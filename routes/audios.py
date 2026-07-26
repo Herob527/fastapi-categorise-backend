@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Annotated
 
 import librosa
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -9,22 +10,10 @@ from sqlalchemy.sql.expression import select
 
 from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
-from database_handle.queries.audios import AudioQueries
+from database_handle.queries.audios import AudioQueries, get_audio_queries
 from services.minio_service import minio_service
 
 router = APIRouter(prefix="/audio", tags=["audio"])
-
-"""
-Idea:
-
-1. Upload just data into DB with status and return presigned upload URL to S3-compatible service
-
-Solutions:
-a) Run background task that'll poll for audios with status "waiting"
-b) Check webhooks
-
-
-"""
 
 
 @router.post("/upload")
@@ -32,6 +21,7 @@ async def upload_audio(
     file: UploadFile,
     uuid: UUID4,
     folder: str = "audio",
+    queries: AudioQueries = Depends(get_audio_queries),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload audio file to MinIO and save metadata to database"""
@@ -40,7 +30,6 @@ async def upload_audio(
             raise HTTPException(status_code=400, detail="File type not specified")
         if file.filename is None:
             raise HTTPException(status_code=400, detail="File name not specified")
-        # Validate audio file type
         if not file.content_type.startswith("audio/"):
             raise HTTPException(status_code=400, detail="Only audio files are allowed")
 
@@ -49,7 +38,6 @@ async def upload_audio(
         file_name = file.filename
         content_type = file.content_type
 
-        # Upload to MinIO using BytesIO
         object_name = await minio_service.upload_file(
             file_data=BytesIO(file_content),
             size=file_size,
@@ -59,11 +47,10 @@ async def upload_audio(
             metadata={"uuid": str(uuid)},
         )
 
-        # Load audio file and extract metadata using the same content
         y, sr = librosa.load(BytesIO(file_content), sr=None)
         audio_length = librosa.get_duration(y=y, sr=sr)
 
-        await AudioQueries(session=db).update_audio(
+        await queries.update_audio(
             audio_id=uuid,
             url=object_name,
             audio_length=audio_length,
@@ -79,23 +66,19 @@ async def upload_audio(
 @router.get("/download/{audio_id}")
 async def download_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
     """Download audio file by UUID"""
-    # Get audio metadata from database
     audio_record = (
         await db.scalars(select(Audio).where(Audio.id == audio_id).limit(1))
     ).first()
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    # Extract object name from URL
-    # URL format: http://minio:9000/{bucket}/{object_name}
     object_name = str(audio_record.url)
 
-    # Download from MinIO
     file_data = await minio_service.download_file(object_name)
 
     return StreamingResponse(
         BytesIO(file_data),
-        media_type="audio/wav",  # or determine from file extension
+        media_type="audio/wav",
         headers={
             "Content-Disposition": f"attachment; filename={audio_record.file_name}"
         },
@@ -116,7 +99,6 @@ async def get_audio_url(
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    # Extract object name from stored URL
     object_name = audio_record.url.split(f"{minio_service.bucket_name}/")[-1]
 
     url = await minio_service.get_file_url(object_name, expires)
@@ -131,10 +113,8 @@ async def delete_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
     if not audio_record:
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    # Extract object name from stored URL
     object_name = audio_record.url.split(f"{minio_service.bucket_name}/")[-1]
 
-    # Delete from MinIO
     success = await minio_service.delete_file(object_name)
 
     if success:

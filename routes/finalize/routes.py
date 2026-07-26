@@ -21,7 +21,7 @@ from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
 from database_handle.models.pagination import Paginated
-from database_handle.queries.bindings import get_all_bindings
+from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
 from database_handle.queries.exports import ExportsQueries, get_exports_queries
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE
@@ -36,7 +36,6 @@ class CategoryData(TypedDict):
 
 
 __all__ = ["router"]
-
 DirectoryModel.model_rebuild()
 
 router = APIRouter(
@@ -49,9 +48,9 @@ router = APIRouter(
 @router.post("/generate_preview", response_model=DirectoryModel)
 async def generate_preview(
     config: FinaliseConfigModel,
-    db: AsyncSession = Depends(get_db),
+    queries: BindingsQueries = Depends(get_bindings_queries),
 ):
-    bindings = await get_all_bindings(db, skip_empty=config.omit_empty)
+    bindings = await queries.get_all(skip_empty=config.omit_empty)
     category_mapping: dict[str, CategoryData] = {}
 
     for binding in bindings:
@@ -83,7 +82,6 @@ async def generate_preview(
 
     if config.divide_by_category:
         for category_id, data in category_mapping.items():
-            # Process category name: replace whitespace with underscores for directory name
             processed_name = data["original_name"].replace(" ", "_")
             directory = DirectoryModel(
                 dir_name=processed_name,
@@ -133,15 +131,15 @@ async def schedule_task(
     if categories is None:
         categories = []
     async with get_sessionmanager().session() as bg_session:
-        _queries = ExportsQueries(session=bg_session)
-        await _queries.set_status(id, ExportStatus.IN_PROGRESS)
+        exports_queries = ExportsQueries(session=bg_session)
+        bindings_queries = BindingsQueries(session=bg_session)
+        await exports_queries.set_status(id, ExportStatus.IN_PROGRESS)
 
         with TemporaryFile("wb+") as temp:
             with zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_STORED) as zf:
                 if config.divide_by_category:
                     for category in categories:
-                        res = await get_all_bindings(
-                            bg_session,
+                        res = await bindings_queries.get_all(
                             category_id=category,
                             skip_empty=config.omit_empty,
                             include_none=category is None,
@@ -168,8 +166,7 @@ async def schedule_task(
                             f"{category_name}/transcript.txt", "\n".join(text_lines)
                         )
                 else:
-                    res = await get_all_bindings(
-                        bg_session,
+                    res = await bindings_queries.get_all(
                         skip_empty=config.omit_empty,
                         include_none=False,
                     )
@@ -207,8 +204,8 @@ async def schedule_task(
             await minio_service.minio_service.upload_file(
                 temp, upload_name, size, content_type="application/zip"
             )
-            await _queries.set_archive_url(id, upload_name)
-            await _queries.set_status(id, ExportStatus.COMPLETED)
+            await exports_queries.set_archive_url(id, upload_name)
+            await exports_queries.set_status(id, ExportStatus.COMPLETED)
 
 
 @router.post("/schedule", response_model=None)

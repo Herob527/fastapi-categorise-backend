@@ -1,46 +1,68 @@
+from dataclasses import dataclass
+from typing import Annotated
+
+from fastapi import Depends
 from pydantic import UUID4
 from sqlalchemy import Column, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import func, select
 
+from database_handle.database import get_db
 from database_handle.models.categories import Category
 
 
-async def get_one_category(db: AsyncSession, id: Column[str] | str | UUID4):
-    entry = (await db.execute(select(Category).where(Category.id == id))).first()
-    return entry
+@dataclass
+class CategoriesQueries:
+    session: AsyncSession
+
+    async def get_one(self, id: Column[str] | str | UUID4):
+        entry = (
+            await self.session.execute(select(Category).where(Category.id == id))
+        ).first()
+        return entry
+
+    async def get_one_by_name(self, name: Column[str] | str):
+        entry = await self.session.scalar(
+            select(Category).where(Category.name == name).limit(1)
+        )
+        return entry
+
+    async def get_count(self):
+        count_func = func.count(Category.id)
+        entry = (
+            await self.session.execute(select(count_func).select_from(Category))
+        ).scalar() or 0
+        return entry
+
+    async def get_all(self):
+        return (await self.session.scalars(select(Category))).all()
+
+    async def remove(self, name: str):
+        query = select(Category).where(Category.name == name).limit(1)
+        entry = (await self.session.scalars(query)).first()
+        if entry is None:
+            raise Exception("Category not found")
+        await self.session.delete(entry)
+        await self.session.commit()
+
+    async def create(self, category: Category):
+        category_exists = await self.get_one(id=category.id)
+        if category_exists:
+            return
+        self.session.add(category)
+        await self.session.commit()
+
+    async def update(self, category: Category):
+        stmt = (
+            update(Category)
+            .where(Category.id == category.id)
+            .values(name=category.name)
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
 
 
-async def get_one_category_by_name(db: AsyncSession, name: Column[str] | str):
-    entry = await db.scalar(select(Category).where(Category.name == name).limit(1))
-    return entry
-
-
-async def get_categories_count(db: AsyncSession):
-    count_func = func.count(Category.id)
-    entry = (await db.execute(select(count_func).select_from(Category))).scalar() or 0
-    return entry
-
-
-async def get_all_categories(db: AsyncSession):
-    return (await db.scalars(select(Category))).all()
-
-
-async def remove_category(db: AsyncSession, name: str):
-    query = select(Category).where(Category.name == name).limit(1)
-    entry = (await db.scalars(query)).first()
-    if entry is None:
-        raise Exception("Category not found")
-    await db.delete(entry)
-
-
-async def create_category(db: AsyncSession, category: Category):
-    category_exists = await get_one_category(db, id=category.id)
-    if category_exists:
-        return
-    db.add(category)
-
-
-async def update_category(db: AsyncSession, category: Category):
-    stmt = update(Category).where(Category.id == category.id).values(name=category.name)
-    await db.execute(stmt)
+def get_categories_queries(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> CategoriesQueries:
+    return CategoriesQueries(session=db)
