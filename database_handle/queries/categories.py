@@ -16,9 +16,7 @@ class CategoriesQueries:
     session: AsyncSession
 
     async def get_one(self, id: Column[str] | str | UUID4):
-        entry = (
-            await self.session.execute(select(Category).where(Category.id == id))
-        ).first()
+        entry = await self.session.scalar(select(Category).where(Category.id == id))
         return entry
 
     async def get_one_by_name(self, name: Column[str] | str):
