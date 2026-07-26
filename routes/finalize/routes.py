@@ -248,7 +248,23 @@ async def get_statuses(
     return await queries.get_paginated(page, limit)
 
 
-@router.get("/download/{export_id}")
+@router.get(
+    "/download/{export_id}",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "ZIP archive",
+            "content": {
+                "application/zip": {
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                    }
+                }
+            },
+        }
+    },
+)
 async def download_finalized_zip(
     export_id: str,
     queries: ExportsQueries = Depends(get_exports_queries),
