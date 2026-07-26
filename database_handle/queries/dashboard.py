@@ -29,19 +29,16 @@ class DashboardQueries:
             select(Category.name, func.count(Binding.id).label("bindings_count"))
             .select_from(Category)
             .join(Binding, Binding.category_id == Category.id)
-            .group_by(Category.id)
-            .subquery()
+            .group_by(Category.id, Category.name)
+            .order_by(func.count(Binding.id).desc())
+            .limit(1)
         )
 
-        result = (
-            await self.session.execute(
-                select(subquery.c.name, subquery.c.bindings_count)
-                .order_by(subquery.c.bindings_count.desc())
-                .limit(1)
-            )
-        ).first()
+        result = (await self.session.execute(subquery)).first()
+        if not result:
+            return "", 0
 
-        return (str(result[0]) if result else "", 0)
+        return (result[0], result[1])
 
     async def get_uncategorized_count(self):
         result = await self.session.scalar(
