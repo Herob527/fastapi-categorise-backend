@@ -15,7 +15,12 @@ from routes.finalize.classes import (
     FinaliseConfigModel,
     TranscriptEntry,
 )
-from routes.finalize.constants import EMPTY_TEXT_TAG, OUTPUT_ARCHIVE, OUTPUT_DIR, TranscriptFile
+from routes.finalize.constants import (
+    EMPTY_TEXT_TAG,
+    OUTPUT_ARCHIVE,
+    OUTPUT_DIR,
+    TranscriptFile,
+)
 from services import minio_service
 
 

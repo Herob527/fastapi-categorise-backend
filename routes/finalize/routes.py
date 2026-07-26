@@ -213,7 +213,7 @@ async def schedule_task(
             await exports_queries.set_archive_url(id, upload_name)
             await exports_queries.set_status(id, ExportStatus.COMPLETED)
             await bg_session.commit()
-    except Exception as e:
+    except Exception:
         async with get_sessionmanager().session() as bg_session:
             exports_queries = ExportsQueries(session=bg_session)
             await exports_queries.set_status(id, ExportStatus.FAILED)
