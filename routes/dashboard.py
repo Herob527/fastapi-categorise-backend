@@ -14,7 +14,6 @@ from database_handle.queries.dashboard import (
     get_uncategorized_count,
 )
 
-
 __all__ = ["router"]
 
 router = APIRouter(

@@ -1,4 +1,4 @@
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.models.audios import Audio

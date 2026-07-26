@@ -1,8 +1,8 @@
+from pydantic import UUID4
 from sqlalchemy import Column, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from pydantic import UUID4
 from sqlalchemy.sql.expression import func, select
+
 from database_handle.models.categories import Category
 
 

@@ -23,4 +23,3 @@ async def update_text(
 ) -> None:
     await text_update(db, Text(id=text_id, text=new_text))
     await db.commit()
-    return None

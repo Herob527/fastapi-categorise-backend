@@ -1,4 +1,3 @@
-from typing import Tuple
 
 from pydantic import BaseModel
 
@@ -6,7 +5,7 @@ from pydantic import BaseModel
 class DashboardModel(BaseModel):
     categories_count: int
     total_bindings_count: int
-    category_with_most_bindings: Tuple[str, int]
+    category_with_most_bindings: tuple[str, int]
     uncategorizaed_count: int
     categorized_count: int
     total_audio_duration: float

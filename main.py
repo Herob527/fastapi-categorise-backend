@@ -1,15 +1,16 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
+
 from database_handle.database import engine, sessionmanager
 from database_handle.models import (
     audios,
     bindings,
     categories,
+    exports,
     exports_categories,
     texts,
-    exports,
 )
 from routes import (
     audios as r_audios,
@@ -20,15 +21,14 @@ from routes import (
 from routes import (
     categories as r_categories,
 )
-from routes.finalize import (
-    routes as r_finalise,
+from routes import (
+    dashboard as r_dashboard,
 )
 from routes import (
     texts as r_texts,
 )
-
-from routes import (
-    dashboard as r_dashboard,
+from routes.finalize import (
+    routes as r_finalise,
 )
 
 texts.Base.metadata.create_all(engine)

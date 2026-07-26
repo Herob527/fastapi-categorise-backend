@@ -1,4 +1,3 @@
-from typing import List
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException
@@ -31,7 +30,7 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[CategoryModel])
+@router.get("", response_model=list[CategoryModel])
 async def get_all_categories(db: AsyncSession = Depends(get_db)):
     data = await all_categories_query(db)
     print(data)
@@ -63,7 +62,6 @@ async def post_new_category(
         raise HTTPException(
             status_code=500, detail="Server error - something with session"
         )
-    return None
 
 
 @router.patch("/{id}")

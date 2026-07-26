@@ -1,7 +1,8 @@
 import enum
+
 from pydantic import BaseModel
 from pydantic.types import UUID4
-from sqlalchemy import Column, Float, String, Uuid, Enum
+from sqlalchemy import Column, Enum, Float, String, Uuid
 
 from ..database import Base
 

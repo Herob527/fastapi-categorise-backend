@@ -5,7 +5,6 @@ import io
 import zipfile
 from os import cpu_count
 from pathlib import Path
-from typing import Dict
 
 from fastapi import HTTPException
 
@@ -30,7 +29,7 @@ def process_category(category: str, config: FinaliseConfigModel):
 def process_line(
     binding: BindingModel,
     config: FinaliseConfigModel,
-    indexed_categories: Dict[str, int] | None = None,
+    indexed_categories: dict[str, int] | None = None,
 ):
     category_index = (
         indexed_categories.get(
@@ -63,9 +62,9 @@ def process_line(
 def process_transcript(
     bindings: list[BindingModel],
     config: FinaliseConfigModel,
-    indexed_categories: Dict[str, int] | None = None,
+    indexed_categories: dict[str, int] | None = None,
 ):
-    res: Dict[str, TranscriptEntry] = dict()
+    res: dict[str, TranscriptEntry] = dict()
     for binding in bindings:
         target_dir = (
             Path(
@@ -189,7 +188,7 @@ async def create_zip():
 async def process_and_create_zip(
     bindings: list[BindingModel],
     config: FinaliseConfigModel,
-    indexed_categories: Dict[str, int],
+    indexed_categories: dict[str, int],
 ):
     service = minio_service.minio_service
 

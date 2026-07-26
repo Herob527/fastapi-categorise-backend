@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import List, Literal, TypedDict, Union, cast
+from typing import Literal, TypedDict, cast
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,7 +15,7 @@ class FileModel(BaseModel):
 class DirectoryModel(BaseModel):
     dir_name: str
     is_dir: Literal[True]
-    files: List[Union[FileModel, DirectoryModel]]
+    files: list[FileModel | DirectoryModel]
     original_name: str | None = None
     category_id: str | None = None
 

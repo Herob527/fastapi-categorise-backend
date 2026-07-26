@@ -1,10 +1,8 @@
-from typing import Annotated, List
+from typing import Annotated
 from uuid import uuid4
 
-from pydantic import BaseModel
-
-from database_handle.models.texts import Text
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel
 from pydantic.types import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +10,7 @@ from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
 from database_handle.models.categories import Category
+from database_handle.models.texts import Text
 from database_handle.queries.bindings import (
     create_binding as create_new_binding,
 )
@@ -19,13 +18,13 @@ from database_handle.queries.bindings import (
     get_all_bindings as all_bindings_query,
 )
 from database_handle.queries.bindings import (
-    update_binding_category,
-)
-from database_handle.queries.bindings import (
     get_paginated_bindings as paginated_bindings_query,
 )
 from database_handle.queries.bindings import (
     remove_binding as binding_remove,
+)
+from database_handle.queries.bindings import (
+    update_binding_category,
 )
 from database_handle.queries.categories import (
     create_category,
@@ -63,7 +62,7 @@ async def get_paginated_bindings(
     )
 
 
-@router.get("/all", response_model=List[BindingModel])
+@router.get("/all", response_model=list[BindingModel])
 async def get_all_bindings(
     db: AsyncSession = Depends(get_db), category: str | None = None
 ):

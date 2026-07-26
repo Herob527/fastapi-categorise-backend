@@ -5,13 +5,18 @@ Todo:
 """
 
 from __future__ import annotations
+
 from pathlib import Path
+from tempfile import TemporaryFile
 from typing import TypedDict
+from uuid import uuid4
+
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
+
 from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
@@ -22,8 +27,6 @@ from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigMod
 from routes.finalize.constants import OUTPUT_ARCHIVE
 from routes.finalize.utils import process_line
 from services import minio_service
-from uuid import uuid4
-from tempfile import TemporaryFile
 
 
 class CategoryData(TypedDict):
@@ -123,8 +126,9 @@ async def schedule_task(
     config: FinaliseConfigModel,
     categories: list[str | None] = [],
 ):
-    from database_handle.database import get_sessionmanager
     import zipfile
+
+    from database_handle.database import get_sessionmanager
 
     async with get_sessionmanager().session() as bg_session:
         _queries = ExportsQueries(session=bg_session)

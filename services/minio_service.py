@@ -1,13 +1,13 @@
-import io
 import asyncio
+import io
 import os
+from datetime import timedelta
 from typing import BinaryIO
+
+from fastapi import HTTPException
 from minio import Minio
 from minio.commonconfig import CopySource
 from minio.error import S3Error
-from fastapi import HTTPException
-from datetime import timedelta
-
 from minio.helpers import DictType
 
 __all__ = ["minio_service"]
