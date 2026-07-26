@@ -64,7 +64,7 @@ def process_transcript(
     config: FinaliseConfigModel,
     indexed_categories: dict[str, int] | None = None,
 ):
-    res: dict[str, TranscriptEntry] = dict()
+    res: dict[str, TranscriptEntry] = {}
     for binding in bindings:
         target_dir = (
             Path(

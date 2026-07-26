@@ -124,12 +124,14 @@ class ScheduleData(BaseModel):
 async def schedule_task(
     id: str,
     config: FinaliseConfigModel,
-    categories: list[str | None] = [],
+    categories: list[str | None] | None = None,
 ):
     import zipfile
 
     from database_handle.database import get_sessionmanager
 
+    if categories is None:
+        categories = []
     async with get_sessionmanager().session() as bg_session:
         _queries = ExportsQueries(session=bg_session)
         await _queries.set_status(id, ExportStatus.IN_PROGRESS)

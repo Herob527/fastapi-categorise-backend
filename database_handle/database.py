@@ -23,7 +23,9 @@ Base: DeclarativeBase = declarative_base()
 
 
 class DatabaseSessionManager:
-    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
+    def __init__(self, host: str, engine_kwargs: dict[str, Any] | None = None):
+        if engine_kwargs is None:
+            engine_kwargs = {}
         default_kwargs = {
             "pool_recycle": 3600,
             "pool_pre_ping": True,

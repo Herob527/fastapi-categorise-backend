@@ -27,9 +27,8 @@ class DirectoryModel(BaseModel):
 
     def get_or_create_dir(self, dir_name: str):
         for i in self.files:
-            if isinstance(i, DirectoryModel):
-                if i.dir_name == dir_name:
-                    return i
+            if isinstance(i, DirectoryModel) and i.dir_name == dir_name:
+                return i
         model = DirectoryModel(dir_name=dir_name, files=[], is_dir=True)
         self.files.append(model)
         return model
@@ -50,7 +49,7 @@ class DirectoryModel(BaseModel):
             )
 
         def dir_names_on_level():
-            return map(lambda x: x.dir_name, dirs_on_level())
+            return (x.dir_name for x in dirs_on_level())
 
         if path_part not in dir_names_on_level():
             files_container.append(
