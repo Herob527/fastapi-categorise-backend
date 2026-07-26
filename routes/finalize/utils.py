@@ -15,7 +15,7 @@ from routes.finalize.classes import (
     FinaliseConfigModel,
     TranscriptEntry,
 )
-from routes.finalize.constants import EMPTY_TEXT_TAG, OUTPUT_ARCHIVE, OUTPUT_DIR, TRANSCRIPT_FILENAME
+from routes.finalize.constants import EMPTY_TEXT_TAG, OUTPUT_ARCHIVE, OUTPUT_DIR, TranscriptFile
 from services import minio_service
 
 
@@ -82,7 +82,7 @@ def process_transcript(
             else Path(OUTPUT_DIR)
         )
 
-        output_file = Path(target_dir, TRANSCRIPT_FILENAME)
+        output_file = TranscriptFile.as_path(target_dir)
         current_category = (
             str(binding.category.name)
             if binding.category is not None
