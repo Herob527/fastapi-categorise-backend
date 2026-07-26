@@ -37,7 +37,11 @@ class DirectoryModel(BaseModel):
         file_name = file.name
         path_part = file.parts[level]
         files_container = self.files if dir is None else dir.files
-        if path_part.endswith((".wav", ".txt")):
+        # Assuming file has dot with extension
+        # Figure out what to do with directories having name (validate?, temporary_replace?)
+        ext = re.search(r"\.\w{2,4}$", file_name)
+
+        if ext is not None:
             self._append(dir or self, FileModel(file_name=file_name, is_dir=False))
             return
 
