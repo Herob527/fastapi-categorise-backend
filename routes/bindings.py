@@ -67,7 +67,7 @@ async def create_binding(
 ):
     binding_id = uuid4()
     category_exist = (
-        await categories_queries.get_one_by_name(name=category)
+        await categories_queries.get_by_name(name=category)
         if category is not None
         else None
     )

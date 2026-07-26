@@ -31,13 +31,13 @@ async def post_new_category(
     queries: CategoriesQueries = Depends(get_categories_queries),
 ) -> None:
     if id is not None:
-        res = await queries.get_one(id=id)
+        res = await queries.get_by_id(id=id)
         if res is not None:
             raise HTTPException(
                 status_code=400, detail=f"Category '{category}' already exists"
             )
 
-    res = await queries.get_one_by_name(name=category)
+    res = await queries.get_by_name(name=category)
     if res is not None:
         raise HTTPException(
             status_code=400, detail=f"Category '{category}' already exists"
@@ -59,7 +59,7 @@ async def update_category(
     new_category_name: str = Form(),
     queries: CategoriesQueries = Depends(get_categories_queries),
 ):
-    category = await queries.get_one(id)
+    category = await queries.get_by_id(id)
     if category is None:
         return {"res": "Not found"}
     new_category = Category(id=category.id, name=new_category_name)

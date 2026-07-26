@@ -15,11 +15,11 @@ from database_handle.models.categories import Category
 class CategoriesQueries:
     session: AsyncSession
 
-    async def get_one(self, id: Column[str] | str | UUID4):
+    async def get_by_id(self, id: Column[str] | str | UUID4):
         entry = await self.session.scalar(select(Category).where(Category.id == id))
         return entry
 
-    async def get_one_by_name(self, name: Column[str] | str):
+    async def get_by_name(self, name: Column[str] | str):
         entry = await self.session.scalar(
             select(Category).where(Category.name == name).limit(1)
         )
@@ -44,7 +44,7 @@ class CategoriesQueries:
         await self.session.commit()
 
     async def create(self, category: Category):
-        category_exists = await self.get_one(id=category.id)
+        category_exists = await self.get_by_id(id=category.id)
         if category_exists:
             return
         self.session.add(category)
