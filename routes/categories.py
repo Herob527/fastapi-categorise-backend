@@ -61,7 +61,7 @@ async def update_category(
     if category is None:
         return {"res": "Not found"}
     new_category = Category(id=category.id, name=new_category_name)
-    await queries.update(category)
+    await queries.update(new_category)
 
 
 @router.delete("/{category_name}")
