@@ -33,7 +33,9 @@ class CategoriesQueries:
         return entry
 
     async def get_all(self):
-        return (await self.session.scalars(select(Category))).all()
+        return (
+            await self.session.scalars(select(Category).order_by(Category.id))
+        ).all()
 
     async def remove(self, name: str):
         query = select(Category).where(Category.name == name).limit(1)
