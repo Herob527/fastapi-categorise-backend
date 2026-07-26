@@ -24,6 +24,7 @@ class DashboardQueries:
         result = await self.session.scalar(select(func.count(Binding.id)))
         return result
 
+    # TODO: Switch from tuple into some dict
     async def get_category_with_most_bindings(self):
         subquery = (
             select(Category.name, func.count(Binding.id).label("bindings_count"))
