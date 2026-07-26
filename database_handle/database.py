@@ -66,9 +66,6 @@ class DatabaseSessionManager:
         session = self._sessionmaker()
         try:
             yield session
-        except Exception:
-            await session.rollback()
-            raise
         finally:
             await session.close()
 

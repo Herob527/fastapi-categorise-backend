@@ -13,9 +13,11 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
+from database_handle.database import get_db
 from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
 from database_handle.models.pagination import Paginated
@@ -129,9 +131,7 @@ async def schedule_task(
     if categories is None:
         categories = []
     async with get_sessionmanager().session() as bg_session:
-        exports_queries = ExportsQueries(session=bg_session)
         bindings_queries = BindingsQueries(session=bg_session)
-        await exports_queries.set_status(id, ExportStatus.IN_PROGRESS)
 
         with TemporaryFile("wb+") as temp:
             with zipfile.ZipFile(temp, mode="w", compression=zipfile.ZIP_STORED) as zf:
@@ -202,6 +202,10 @@ async def schedule_task(
             await minio_service.minio_service.upload_file(
                 temp, upload_name, size, content_type="application/zip"
             )
+
+        async with bg_session.begin() as session:
+            exports_queries = ExportsQueries(session=session.session)
+            await exports_queries.set_status(id, ExportStatus.IN_PROGRESS)
             await exports_queries.set_archive_url(id, upload_name)
             await exports_queries.set_status(id, ExportStatus.COMPLETED)
 
@@ -211,15 +215,14 @@ async def schedule_finalise(
     backgroundTasks: BackgroundTasks,
     config: FinaliseConfigModel,
     params: ScheduleData | None = None,
-    queries: ExportsQueries = Depends(get_exports_queries),
+    db: AsyncSession = Depends(get_db),
 ):
     categories = params.categories if params is not None else None
 
     id = str(uuid4())
-    await queries.schedule(
-        id,
-        categories,
-    )
+    async with db.begin() as session:
+        queries = ExportsQueries(session=session.session)
+        await queries.schedule(id, categories)
 
     backgroundTasks.add_task(
         schedule_task, id=id, categories=categories or [], config=config
@@ -253,9 +256,11 @@ async def download_finalized_zip(
 @router.get("/delete-zip/{export_id}")
 async def delete_finalized_zip(
     export_id: str,
-    queries: ExportsQueries = Depends(get_exports_queries),
+    db: AsyncSession = Depends(get_db),
 ):
     service = minio_service.minio_service
-    archive_url = await queries.get_archive(export_id)
-    await service.delete_file(archive_url)
-    await queries.delete_export(export_id)
+    async with db.begin() as session:
+        queries = ExportsQueries(session=session.session)
+        archive_url = await queries.get_archive(export_id)
+        await service.delete_file(archive_url)
+        await queries.delete_export(export_id)

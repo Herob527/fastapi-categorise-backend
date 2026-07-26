@@ -2,7 +2,9 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException
 from pydantic import UUID4
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from database_handle.database import get_db
 from database_handle.models.categories import Category, CategoryModel
 from database_handle.queries.categories import CategoriesQueries, get_categories_queries
 
@@ -19,56 +21,55 @@ router = APIRouter(
 async def get_all_categories(
     queries: CategoriesQueries = Depends(get_categories_queries),
 ):
-    data = await queries.get_all()
-    print(data)
-    return data
+    return await queries.get_all()
 
 
 @router.post("/")
 async def post_new_category(
     id: UUID4 | None = None,
     category: str = Form(),
-    queries: CategoriesQueries = Depends(get_categories_queries),
+    db: AsyncSession = Depends(get_db),
 ) -> None:
-    if id is not None:
-        res = await queries.get_by_id(id=id)
+    async with db.begin() as session:
+        queries = CategoriesQueries(session=session.session)
+        res = await queries.get_by_id(id) if id else None
         if res is not None:
             raise HTTPException(
                 status_code=400, detail=f"Category '{category}' already exists"
             )
 
-    res = await queries.get_by_name(name=category)
-    if res is not None:
-        raise HTTPException(
-            status_code=400, detail=f"Category '{category}' already exists"
-        )
+        res = await queries.get_by_name(category)
+        if res is not None:
+            raise HTTPException(
+                status_code=400, detail=f"Category '{category}' already exists"
+            )
 
-    new_category = Category(id=id or uuid4(), name=category)
-    try:
-        await queries.create(category=new_category)
-        # commit handled by session from dependency
-    except Exception:
-        raise HTTPException(
-            status_code=500, detail="Server error - something with session"
-        )
+        await queries.create(Category(id=id or uuid4(), name=category))
 
 
 @router.patch("/{id}")
 async def update_category(
     id: UUID4,
     new_category_name: str = Form(),
-    queries: CategoriesQueries = Depends(get_categories_queries),
+    db: AsyncSession = Depends(get_db),
 ):
-    category = await queries.get_by_id(id)
-    if category is None:
-        return {"res": "Not found"}
-    new_category = Category(id=category.id, name=new_category_name)
-    await queries.update(new_category)
+    async with db.begin() as session:
+        queries = CategoriesQueries(session=session.session)
+        category = await queries.get_by_id(id)
+        if category is None:
+            return {"res": "Not found"}
+        category.name = new_category_name
+        await queries.update(category)
 
 
 @router.delete("/{category_name}")
 async def remove_category(
     category_name: str,
-    queries: CategoriesQueries = Depends(get_categories_queries),
+    db: AsyncSession = Depends(get_db),
 ):
-    await queries.remove(name=category_name)
+    async with db.begin() as session:
+        queries = CategoriesQueries(session=session.session)
+        entry = await queries.get_by_name(category_name)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="Category not found")
+        await queries.remove(category_name)

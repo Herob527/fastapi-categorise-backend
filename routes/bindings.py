@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from pydantic.types import UUID4
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database_handle.database import get_db
@@ -13,7 +14,7 @@ from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
 from database_handle.queries.categories import CategoriesQueries, get_categories_queries
-from routes.audios import delete_audio
+from services.minio_service import minio_service
 
 __all__ = ["router"]
 
@@ -65,40 +66,41 @@ async def create_binding(
     categories_queries: CategoriesQueries = Depends(get_categories_queries),
     db: AsyncSession = Depends(get_db),
 ):
-    binding_id = uuid4()
-    category_exist = (
-        await categories_queries.get_by_name(name=category)
-        if category is not None
-        else None
-    )
     if not audio.filename:
         raise HTTPException(
             status_code=400, detail="Audio file is required to have filename"
         )
-    category_id = uuid4() if category_exist is None else category_exist.id
-    new_binding = Binding(
-        id=binding_id,
-        category_id=category_id if category is not None else None,
-        audio_id=binding_id,
-        text_id=binding_id,
-    )
-    new_category = (
-        Category(id=category_id, name=category) if category is not None else None
-    )
+    binding_id = uuid4()
     try:
-        if new_category is not None:
-            await categories_queries.create(category=new_category)
-        new_text = Text(id=binding_id, text="")
-        db.add(new_text)
-        db.add(
-            Audio(
-                id=binding_id, file_name=audio.filename, audio_status=StatusEnum.waiting
+        async with db.begin() as session:
+            bindings_queries = BindingsQueries(session=session.session)
+            categories_queries = CategoriesQueries(session=session.session)
+
+            existing_category = (
+                await categories_queries.get_by_name(name=category)
+                if category is not None
+                else None
             )
-        )
-        await bindings_queries.create(binding=new_binding)
-        await db.commit()
-    except HTTPException as e:
-        await db.rollback()
+            category_id = uuid4() if existing_category is None else existing_category.id
+            if existing_category is None and category is not None:
+                await categories_queries.create(Category(id=category_id, name=category))
+            await bindings_queries.create(
+                Binding(
+                    id=binding_id,
+                    category_id=category_id if category is not None else None,
+                    audio_id=binding_id,
+                    text_id=binding_id,
+                )
+            )
+            session.add(Text(id=binding_id, text=""))
+            session.add(
+                Audio(
+                    id=binding_id,
+                    file_name=audio.filename,
+                    audio_status=StatusEnum.waiting,
+                )
+            )
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return CreateResponseModel(binding_id=binding_id)
 
@@ -106,13 +108,23 @@ async def create_binding(
 @router.delete("/{binding_id}")
 async def remove_binding(
     binding_id: UUID4,
-    queries: BindingsQueries = Depends(get_bindings_queries),
     db: AsyncSession = Depends(get_db),
 ):
-    await queries.remove(binding_id)
+    async with db.begin() as t:
+        audio_record = await db.scalar(
+            select(Audio).where(Audio.id == binding_id).limit(1)
+        )
+        if not audio_record:
+            raise HTTPException(status_code=404, detail="Audio file not found")
 
-    await delete_audio(binding_id, db)
-    await db.commit()
+        object_name = str(audio_record.url).split(f"{minio_service.bucket_name}/")[-1]
+        success = await minio_service.delete_file(object_name)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete audio file")
+
+        queries = BindingsQueries(session=t.session)
+        await queries.remove(binding_id)
+        await t.session.delete(audio_record)
 
     return {"hejo": binding_id}
 
@@ -121,18 +133,18 @@ async def remove_binding(
 async def binding_category_update(
     binding_id: UUID4,
     category_id: UUID4,
-    queries: BindingsQueries = Depends(get_bindings_queries),
     db: AsyncSession = Depends(get_db),
 ):
-    await queries.update_category(binding_id, category_id)
-    await db.commit()
+    async with db.begin() as session:
+        queries = BindingsQueries(session=session.session)
+        await queries.update_category(binding_id, category_id)
 
 
 @router.put("/{binding_id}/remove_category")
 async def binding_category_remove(
     binding_id: UUID4,
-    queries: BindingsQueries = Depends(get_bindings_queries),
     db: AsyncSession = Depends(get_db),
 ):
-    await queries.update_category(binding_id, None)
-    await db.commit()
+    async with db.begin() as session:
+        queries = BindingsQueries(session=session.session)
+        await queries.update_category(binding_id, None)

@@ -41,14 +41,12 @@ class CategoriesQueries:
         if entry is None:
             raise Exception("Category not found")
         await self.session.delete(entry)
-        await self.session.commit()
 
     async def create(self, category: Category):
         category_exists = await self.get_by_id(id=category.id)
         if category_exists:
             return
         self.session.add(category)
-        await self.session.commit()
 
     async def update(self, category: Category):
         stmt = (
@@ -57,7 +55,6 @@ class CategoriesQueries:
             .values(name=category.name)
         )
         await self.session.execute(stmt)
-        await self.session.commit()
 
 
 def get_categories_queries(

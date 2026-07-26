@@ -29,7 +29,6 @@ class AudioQueries:
         await self.session.execute(
             update(Audio).where(Audio.id == audio_id).values(**args)
         )
-        await self.session.commit()
 
 
 def get_audio_queries(db: Annotated[AsyncSession, Depends(get_db)]) -> AudioQueries:

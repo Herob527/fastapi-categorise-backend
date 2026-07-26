@@ -40,19 +40,16 @@ class ExportsQueries:
             else []
         )
         self.session.add_all(entries)
-        await self.session.commit()
 
     async def set_status(self, id: str, status: ExportStatus):
         await self.session.execute(
             update(Exports).where(Exports.id == id).values(status=status)
         )
-        await self.session.commit()
 
     async def set_archive_url(self, id: str, url: str):
         await self.session.execute(
             update(Exports).where(Exports.id == id).values(archive_url=url)
         )
-        await self.session.commit()
 
     async def get_archive(self, id: str):
         res = await self.session.execute(select(Exports).where(Exports.id == id))
@@ -60,7 +57,6 @@ class ExportsQueries:
 
     async def delete_export(self, id: str):
         await self.session.execute(delete(Exports).where(Exports.id == id))
-        await self.session.commit()
 
     async def remove(self, id: str):
         pass
