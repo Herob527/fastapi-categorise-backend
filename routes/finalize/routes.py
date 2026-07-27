@@ -331,18 +331,15 @@ async def delete_finalized_zip(
 
 @router.get("/exports/stream", response_class=EventSourceResponse)
 async def stream_exports(
-    db: Annotated[AsyncSession, Depends(get_db)],
     listener_service: Annotated[ListenerService, Depends(get_listener_service)],
 ):
 
     await listener_service.subscribe(Channels.EXPORTS.value)
-    index = 0
     async for message in listener_service.listen():
-        print("test")
-        print(message)
-        index += 1
-
-        yield ServerSentEvent(data='{"test": 2}', event="item_update", id=str(index))
-    # async with db.begin() as session:
-    #     queries = ExportsQueries(session=session.session)
-    #     return await queries.stream()
+        if message["type"] == "message":
+            status_msg = ExportStatusMessage.from_json(message["data"])
+            print(status_msg)
+            yield ServerSentEvent(
+                data=status_msg.to_json(),
+                event="item_update",
+            )
