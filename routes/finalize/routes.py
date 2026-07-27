@@ -13,6 +13,7 @@ from typing import TypedDict
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi.responses import EventSourceResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
@@ -290,3 +291,10 @@ async def delete_finalized_zip(
         archive_url = await queries.get_archive(export_id)
         await service.delete_file(archive_url)
         await queries.delete_export(export_id)
+
+
+@router.get("/exports/stream", response_class=EventSourceResponse)
+async def stream_exports(db: AsyncSession = Depends(get_db)):
+    async with db.begin() as session:
+        queries = ExportsQueries(session=session.session)
+        return await queries.stream()
