@@ -38,6 +38,18 @@ class CategoryData(TypedDict):
     bindings: list[BindingModel]
 
 
+class ExportStatusMessage(BaseModel):
+    id: str
+    status: int
+
+    def to_json(self) -> str:
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "ExportStatusMessage":
+        return cls.model_validate_json(json_str)
+
+
 __all__ = ["router"]
 DirectoryModel.model_rebuild()
 
@@ -215,14 +227,18 @@ async def schedule_task(
             await exports_queries.set_status(id, ExportStatus.IN_PROGRESS)
             await listener_service.publish(
                 Channels.EXPORTS.value,
-                {"id": id, "status": ExportStatus.IN_PROGRESS.value},
+                ExportStatusMessage(
+                    id=id, status=ExportStatus.IN_PROGRESS.value
+                ).to_json(),
             )
             await exports_queries.set_archive_url(id, upload_name)
             await exports_queries.set_status(id, ExportStatus.COMPLETED)
             await bg_session.commit()
             await listener_service.publish(
                 Channels.EXPORTS.value,
-                {"id": id, "status": ExportStatus.COMPLETED.value},
+                ExportStatusMessage(
+                    id=id, status=ExportStatus.COMPLETED.value
+                ).to_json(),
             )
     except Exception:
         async with get_sessionmanager().session() as bg_session:
@@ -230,7 +246,8 @@ async def schedule_task(
             await exports_queries.set_status(id, ExportStatus.FAILED)
             await bg_session.commit()
     await listener_service.publish(
-        Channels.EXPORTS.value, {"id": id, "status": ExportStatus.FAILED.value}
+        Channels.EXPORTS.value,
+        ExportStatusMessage(id=id, status=ExportStatus.FAILED.value).to_json(),
     )
 
 
@@ -254,7 +271,8 @@ async def schedule_finalise(
         schedule_task, id=id, categories=categories or [], config=config
     )
     await listener_service.publish(
-        Channels.EXPORTS.value, {"id": id, "status": ExportStatus.PENDING.value}
+        Channels.EXPORTS.value,
+        ExportStatusMessage(id=id, status=ExportStatus.PENDING.value).to_json(),
     )
 
 
