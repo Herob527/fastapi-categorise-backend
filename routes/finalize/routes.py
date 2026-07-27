@@ -155,7 +155,13 @@ async def schedule_task(
                                     else config.uncategorized_name
                                 )
                                 zf.writestr(
-                                    f"{category_name}/wavs/{binding.audio.file_name}",
+                                    str(
+                                        Path(
+                                            category_name,
+                                            WavsDir.name,
+                                            binding.audio.file_name,
+                                        )
+                                    ),
                                     file,
                                 )
                                 text_lines.append(
@@ -164,10 +170,11 @@ async def schedule_task(
                                     )
                                 )
 
-                            zf.writestr(
-                                TranscriptFile.as_string(category_name),
-                                "\n".join(text_lines),
-                            )
+                            if config.export_transcript:
+                                zf.writestr(
+                                    TranscriptFile.as_string(category_name),
+                                    "\n".join(text_lines),
+                                )
                     else:
                         res = await bindings_queries.get_all(
                             skip_empty=config.omit_empty,
@@ -199,7 +206,8 @@ async def schedule_task(
                                 )
                             )
 
-                        zf.writestr(TranscriptFile.name, "\n".join(text_lines))
+                        if config.export_transcript:
+                            zf.writestr(TranscriptFile.name, "\n".join(text_lines))
 
                 size = temp.tell()
                 temp.seek(0)
