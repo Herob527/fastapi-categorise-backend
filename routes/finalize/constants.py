@@ -7,25 +7,16 @@ OUTPUT_ARCHIVE = "categorized_files.zip"
 EMPTY_TEXT_TAG = "<empty-text>"
 
 
-class TranscriptFile:
-    name = "transcript.txt"
+class PathItem:
+    def __init__(self, name: str):
+        self.name = name
 
-    @classmethod
-    def as_path(cls, *parts: Path | str) -> Path:
-        return Path(*parts, cls.name)
+    def as_path(self, *parts: Path | str) -> Path:
+        return Path(*parts, self.name)
 
-    @classmethod
-    def as_string(cls, *parts: str) -> str:
-        return str(Path(*parts, cls.name)) if parts else cls.name
+    def as_string(self, *parts: str) -> str:
+        return str(Path(*parts, self.name)) if parts else self.name
 
 
-class WavsDir:
-    name = "wavs"
-
-    @classmethod
-    def as_path(cls, *parts: Path | str) -> Path:
-        return Path(*parts, cls.name)
-
-    @classmethod
-    def as_string(cls, *parts: str) -> str:
-        return str(Path(*parts, cls.name)) if parts else cls.name
+TranscriptFile = PathItem("transcript.txt")
+WavsDir = PathItem("wavs")
