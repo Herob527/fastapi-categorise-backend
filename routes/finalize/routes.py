@@ -4,12 +4,12 @@ Todo:
     - Create endpoint for attempting fetching data and if it's not finished, return 202
 """
 
-from __future__ import annotations
-
+from services.listener_service import Channels
+from fastapi.sse import ServerSentEvent
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryFile
-from typing import TypedDict
+from typing import Annotated, TypedDict
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
@@ -29,6 +29,7 @@ from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigMod
 from routes.finalize.constants import OUTPUT_ARCHIVE, TranscriptFile
 from routes.finalize.utils import process_line
 from services import minio_service
+from services.listener_service import ListenerService, get_listener_service
 
 
 class CategoryData(TypedDict):
@@ -126,6 +127,7 @@ async def schedule_task(
     config: FinaliseConfigModel,
     categories: list[str | None] | None = None,
 ):
+    listener_service = ListenerService()
 
     if categories is None:
         categories = []
@@ -211,32 +213,48 @@ async def schedule_task(
 
             exports_queries = ExportsQueries(session=bg_session)
             await exports_queries.set_status(id, ExportStatus.IN_PROGRESS)
+            await listener_service.publish(
+                Channels.EXPORTS.value,
+                {"id": id, "status": ExportStatus.IN_PROGRESS.value},
+            )
             await exports_queries.set_archive_url(id, upload_name)
             await exports_queries.set_status(id, ExportStatus.COMPLETED)
             await bg_session.commit()
+            await listener_service.publish(
+                Channels.EXPORTS.value,
+                {"id": id, "status": ExportStatus.COMPLETED.value},
+            )
     except Exception:
         async with get_sessionmanager().session() as bg_session:
             exports_queries = ExportsQueries(session=bg_session)
             await exports_queries.set_status(id, ExportStatus.FAILED)
             await bg_session.commit()
+    await listener_service.publish(
+        Channels.EXPORTS.value, {"id": id, "status": ExportStatus.FAILED.value}
+    )
 
 
 @router.post("/schedule", response_model=None)
 async def schedule_finalise(
     backgroundTasks: BackgroundTasks,
     config: FinaliseConfigModel,
+    listener_service: Annotated[ListenerService, Depends(get_listener_service)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     params: ScheduleData | None = None,
-    db: AsyncSession = Depends(get_db),
 ):
     categories = params.categories if params is not None else None
 
     id = str(uuid4())
+
     async with db.begin() as session:
         queries = ExportsQueries(session=session.session)
         await queries.schedule(id, categories)
 
     backgroundTasks.add_task(
         schedule_task, id=id, categories=categories or [], config=config
+    )
+    await listener_service.publish(
+        Channels.EXPORTS.value, {"id": id, "status": ExportStatus.PENDING.value}
     )
 
 
@@ -294,7 +312,19 @@ async def delete_finalized_zip(
 
 
 @router.get("/exports/stream", response_class=EventSourceResponse)
-async def stream_exports(db: AsyncSession = Depends(get_db)):
-    async with db.begin() as session:
-        queries = ExportsQueries(session=session.session)
-        return await queries.stream()
+async def stream_exports(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    listener_service: Annotated[ListenerService, Depends(get_listener_service)],
+):
+
+    await listener_service.subscribe(Channels.EXPORTS.value)
+    index = 0
+    async for message in listener_service.listen():
+        print("test")
+        print(message)
+        index += 1
+
+        yield ServerSentEvent(data='{"test": 2}', event="item_update", id=str(index))
+    # async with db.begin() as session:
+    #     queries = ExportsQueries(session=session.session)
+    #     return await queries.stream()
