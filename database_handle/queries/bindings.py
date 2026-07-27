@@ -102,9 +102,7 @@ class BindingsQueries:
         stmt = delete(Binding).where(Binding.id == id)
         await self.session.execute(stmt)
 
-    async def update_category(
-        self, binding_id: UUID4, category_id: UUID4 | None
-    ):
+    async def update_category(self, binding_id: UUID4, category_id: UUID4 | None):
         stmt = (
             update(Binding)
             .where(Binding.id == binding_id)
