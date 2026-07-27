@@ -338,7 +338,6 @@ async def stream_exports(
     async for message in listener_service.listen():
         if message["type"] == "message":
             status_msg = ExportStatusMessage.from_json(message["data"])
-            print(status_msg)
             yield ServerSentEvent(
                 data=status_msg.to_json(),
                 event="item_update",
