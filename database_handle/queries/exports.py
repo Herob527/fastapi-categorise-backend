@@ -58,9 +58,6 @@ class ExportsQueries:
     async def delete_export(self, id: str):
         await self.session.execute(delete(Exports).where(Exports.id == id))
 
-    async def remove(self, id: str):
-        pass
-
 
 def get_exports_queries(db: Annotated[AsyncSession, Depends(get_db)]) -> ExportsQueries:
     """Dependency function to inject ExportsQueries with database session."""
