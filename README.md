@@ -1,7 +1,7 @@
 ## PREREQUISITES
 
 - Python 3.12
-- Poetry
+- uv
 
 ## LOCAL
 
