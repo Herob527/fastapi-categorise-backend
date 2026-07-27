@@ -61,10 +61,10 @@ class CreateResponseModel(BaseModel):
 @router.post("", response_model=CreateResponseModel)
 async def create_binding(
     audio: Annotated[UploadFile, File()],
+    bindings_queries: Annotated[BindingsQueries, Depends(get_bindings_queries)],
+    categories_queries: Annotated[CategoriesQueries, Depends(get_categories_queries)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     category: str | None = None,
-    bindings_queries: BindingsQueries = Depends(get_bindings_queries),
-    categories_queries: CategoriesQueries = Depends(get_categories_queries),
-    db: AsyncSession = Depends(get_db),
 ):
     if not audio.filename:
         raise HTTPException(
