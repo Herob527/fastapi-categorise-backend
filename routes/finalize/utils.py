@@ -47,7 +47,7 @@ def process_line(
         else 0
     )
     formatted_line = config.line_format.format(
-        file=f"wavs/{binding.audio.file_name}",
+        file=Path(WavsDir.as_path(), binding.audio.file_name),
         text=(
             binding.text.text
             if str(binding.text.text).strip() != ""
