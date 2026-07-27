@@ -1,5 +1,5 @@
-from enum import StrEnum
 from collections.abc import AsyncGenerator
+from enum import StrEnum
 
 from redis.asyncio import Redis
 from redis.client import PubSub
@@ -11,8 +11,13 @@ class Channels(StrEnum):
 
 
 class ListenerService:
-    redis = Redis(host="redis", port=6379)
-    pubsub: PubSub = redis.pubsub()
+    redis: Redis
+    pubsub: PubSub
+
+    def __init__(self):
+        self.redis = Redis(host="redis", port=6379)
+
+        self.pubsub = self.redis.pubsub()
 
     def listen(self) -> AsyncGenerator:
         return self.pubsub.listen()
