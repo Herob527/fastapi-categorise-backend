@@ -16,6 +16,16 @@ class TranscriptFile:
 
     @classmethod
     def as_string(cls, *parts: str) -> str:
-        if parts:
-            return "/".join((*parts, cls.name))
-        return cls.name
+        return str(Path(*parts, cls.name)) if parts else cls.name
+
+
+class WavsDir:
+    name = "wavs"
+
+    @classmethod
+    def as_path(cls, *parts: Path | str) -> Path:
+        return Path(*parts, cls.name)
+
+    @classmethod
+    def as_string(cls, *parts: str) -> str:
+        return str(Path(*parts, cls.name)) if parts else cls.name
