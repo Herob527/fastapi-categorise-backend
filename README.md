@@ -5,7 +5,7 @@
 
 ## LOCAL
 
-0. Install poetry: `pip install poetry`
+0. Install uv: [installation steps](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
 1. Create venv: `python -m venv .venv`
 2. Activate venv: `source .venv/bin/activate`
 3. Install dependencies: `uv pip install`
