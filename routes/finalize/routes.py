@@ -4,9 +4,6 @@ Todo:
     - Create endpoint for attempting fetching data and if it's not finished, return 202
 """
 
-from database_handle.queries.exports import ExportStatusMessage
-from services.listener_service import Channels
-from fastapi.sse import ServerSentEvent
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryFile
@@ -15,6 +12,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import EventSourceResponse
+from fastapi.sse import ServerSentEvent
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
@@ -25,12 +23,16 @@ from database_handle.models.bindings import BindingModel
 from database_handle.models.exports import ExportModel, ExportStatus
 from database_handle.models.pagination import Paginated
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
-from database_handle.queries.exports import ExportsQueries, get_exports_queries
+from database_handle.queries.exports import (
+    ExportsQueries,
+    ExportStatusMessage,
+    get_exports_queries,
+)
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
 from routes.finalize.constants import OUTPUT_ARCHIVE, TranscriptFile
 from routes.finalize.utils import process_line
 from services import minio_service
-from services.listener_service import ListenerService, get_listener_service
+from services.listener_service import Channels, ListenerService, get_listener_service
 
 
 class CategoryData(TypedDict):

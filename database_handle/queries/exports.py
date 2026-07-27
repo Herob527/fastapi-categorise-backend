@@ -1,9 +1,9 @@
-from pydantic import BaseModel
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import Depends
+from pydantic import BaseModel
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
