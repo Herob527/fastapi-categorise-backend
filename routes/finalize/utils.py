@@ -20,6 +20,7 @@ from routes.finalize.constants import (
     OUTPUT_ARCHIVE,
     OUTPUT_DIR,
     TranscriptFile,
+    WavsDir,
 )
 from services import minio_service
 
@@ -128,10 +129,10 @@ def get_paths(bindings: list[BindingModel], config: FinaliseConfigModel):
             subdir = Path(
                 subdir,
                 b.category.name if b.category else config.uncategorized_name,
-                "wavs",
+                WavsDir.name,
             )
         else:
-            subdir = Path(subdir, "wavs")
+            subdir = WavsDir.as_path(subdir)
 
         yield (b.audio.url, Path(subdir, b.audio.file_name))
 

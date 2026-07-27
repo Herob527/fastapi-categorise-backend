@@ -1,9 +1,3 @@
-"""
-Todo:
-    - Create endpoint for scheduling creation of zip file in the background
-    - Create endpoint for attempting fetching data and if it's not finished, return 202
-"""
-
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryFile
@@ -29,7 +23,7 @@ from database_handle.queries.exports import (
     get_exports_queries,
 )
 from routes.finalize.classes import DirectoryModel, FileModel, FinaliseConfigModel
-from routes.finalize.constants import OUTPUT_ARCHIVE, TranscriptFile
+from routes.finalize.constants import OUTPUT_ARCHIVE, TranscriptFile, WavsDir
 from routes.finalize.utils import process_line
 from services import minio_service
 from services.listener_service import Channels, ListenerService, get_listener_service
@@ -97,7 +91,7 @@ async def generate_preview(
                 category_id=data["id"],
             )
             for binding in data["bindings"]:
-                dir = directory.get_or_create_dir("wavs")
+                dir = directory.get_or_create_dir(WavsDir.name)
                 dir.append(file=Path(binding.audio.file_name))
             directory.append(file=TranscriptFile.as_path())
             files.append(directory)
@@ -115,7 +109,7 @@ async def generate_preview(
         files.append(directory)
 
     base_dir = DirectoryModel(
-        dir_name="wavs", files=files, is_dir=True, original_name=None
+        dir_name=WavsDir.name, files=files, is_dir=True, original_name=None
     )
 
     return base_dir
