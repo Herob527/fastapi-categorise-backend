@@ -4,6 +4,7 @@ Todo:
     - Create endpoint for attempting fetching data and if it's not finished, return 202
 """
 
+from database_handle.queries.exports import ExportStatusMessage
 from services.listener_service import Channels
 from fastapi.sse import ServerSentEvent
 import zipfile
@@ -36,18 +37,6 @@ class CategoryData(TypedDict):
     id: str | None
     original_name: str
     bindings: list[BindingModel]
-
-
-class ExportStatusMessage(BaseModel):
-    id: str
-    status: int
-
-    def to_json(self) -> str:
-        return self.model_dump_json()
-
-    @classmethod
-    def from_json(cls, json_str: str) -> "ExportStatusMessage":
-        return cls.model_validate_json(json_str)
 
 
 __all__ = ["router"]

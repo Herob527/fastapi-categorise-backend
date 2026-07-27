@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import uuid4
@@ -11,6 +12,18 @@ from database_handle.models.exports import Exports, ExportStatus
 from database_handle.models.exports_categories import ExportsCategories
 from database_handle.models.pagination import Paginated
 from database_handle.utils.pagination import with_paginated
+
+
+class ExportStatusMessage(BaseModel):
+    id: str
+    status: int
+
+    def to_json(self) -> str:
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, json_str: str) -> ExportStatusMessage:
+        return cls.model_validate_json(json_str)
 
 
 @dataclass
