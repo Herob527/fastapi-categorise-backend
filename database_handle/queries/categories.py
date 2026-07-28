@@ -1,4 +1,3 @@
-from database_handle.models.categories import Visibility
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -9,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import func, select
 
 from database_handle.database import get_db
-from database_handle.models.categories import Category
+from database_handle.models.categories import Category, Visibility
 
 
 @dataclass
@@ -59,9 +58,9 @@ class CategoriesQueries:
         await self.session.execute(stmt)
 
     async def create(self, category: Category):
-        category_exists = await self.get_by_id(id=category.id)
-        if category_exists:
-            return
+        existing_category = await self.get_by_id(id=category.id)
+        if existing_category and existing_category.visibility == Visibility.PUBLIC:
+            raise Exception("Category already exists")
         self.session.add(category)
 
     async def update(self, category: Category):
