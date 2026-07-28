@@ -1,3 +1,4 @@
+from minio import select
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -29,6 +30,11 @@ class AudioQueries:
         await self.session.execute(
             update(Audio).where(Audio.id == audio_id).values(**args)
         )
+
+    async def exists(self, name: str):
+        stmt = select(Audio).filter_by(file_name=name).limit(1)
+        result = await self.session.scalar(stmt)
+        return result is not None
 
 
 def get_audio_queries(db: Annotated[AsyncSession, Depends(get_db)]) -> AudioQueries:
