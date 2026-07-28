@@ -28,13 +28,21 @@ class CategoriesQueries:
     async def get_count(self):
         count_func = func.count(Category.id)
         entry = (
-            await self.session.execute(select(count_func).select_from(Category))
+            await self.session.execute(
+                select(count_func)
+                .select_from(Category)
+                .where(Category.visibility == Category.visibility.PUBLIC)
+            )
         ).scalar() or 0
         return entry
 
     async def get_all(self):
         return (
-            await self.session.scalars(select(Category).order_by(Category.id))
+            await self.session.scalars(
+                select(Category)
+                .order_by(Category.id)
+                .where(Category.visibility == Category.visibility.PUBLIC)
+            )
         ).all()
 
     async def remove(self, name: str):
@@ -42,7 +50,12 @@ class CategoriesQueries:
         entry = (await self.session.scalars(query)).first()
         if entry is None:
             raise Exception("Category not found")
-        await self.session.delete(entry)
+        stmt = (
+            update(Category)
+            .where(Category.id == entry.id)
+            .values(visibility=Category.visibility.HIDDEN)
+        )
+        await self.session.execute(stmt)
 
     async def create(self, category: Category):
         category_exists = await self.get_by_id(id=category.id)
