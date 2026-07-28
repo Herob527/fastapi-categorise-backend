@@ -19,8 +19,8 @@ class DashboardQueries:
 
     async def get_categories_count(self):
         result = await self.session.scalar(
-            select(
-                func.count(Category.id).where(Category.visibility == Visibility.PUBLIC)
+            select(func.count(Category.id)).where(
+                Category.visibility == Visibility.PUBLIC
             )
         )
         return result
