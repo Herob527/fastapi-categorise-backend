@@ -76,7 +76,8 @@ async def create_binding(
             bindings_queries = BindingsQueries(session=session.session)
             categories_queries = CategoriesQueries(session=session.session)
             audios_queries = AudioQueries(session=session.session)
-            if audios_queries.exists(audio.filename):
+            audio_already_exists = await audios_queries.exists(audio.filename)
+            if audio_already_exists:
                 raise HTTPException(status_code=409, detail="Audio file already exists")
 
             category_id = (
