@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
-from minio import select
 from pydantic import UUID4
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
 
@@ -31,7 +31,7 @@ class AudioQueries:
             update(Audio).where(Audio.id == audio_id).values(**args)
         )
 
-    async def exists(self, name: str):
+    async def exists(self, name: str) -> bool:
         stmt = select(Audio).filter_by(file_name=name).limit(1)
         result = await self.session.scalar(stmt)
         return result is not None
