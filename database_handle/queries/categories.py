@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Annotated
+from uuid import uuid4
 
 from fastapi import Depends
 from pydantic import UUID4
 from sqlalchemy import Column, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import func, select
 
@@ -24,6 +26,19 @@ class CategoriesQueries:
             select(Category).where(Category.name == name).limit(1)
         )
         return entry
+
+    async def get_or_create_by_name(self, name: str) -> UUID4:
+        stmt = (
+            insert(Category)
+            .values(id=uuid4(), name=name, visibility=Visibility.PUBLIC)
+            .on_conflict_do_update(
+                index_elements=["name"],
+                set_={"visibility": Visibility.PUBLIC},
+            )
+            .returning(Category.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
 
     async def get_count(self):
         count_func = func.count(Category.id)

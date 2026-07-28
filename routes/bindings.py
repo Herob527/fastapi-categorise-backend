@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
-from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
 from database_handle.queries.categories import CategoriesQueries, get_categories_queries
@@ -76,14 +75,11 @@ async def create_binding(
             bindings_queries = BindingsQueries(session=session.session)
             categories_queries = CategoriesQueries(session=session.session)
 
-            existing_category = (
-                await categories_queries.get_by_name(name=category)
+            category_id = (
+                await categories_queries.get_or_create_by_name(category)
                 if category is not None
                 else None
             )
-            category_id = uuid4() if existing_category is None else existing_category.id
-            if existing_category is None and category is not None:
-                await categories_queries.create(Category(id=category_id, name=category))
             await bindings_queries.create(
                 Binding(
                     id=binding_id,
