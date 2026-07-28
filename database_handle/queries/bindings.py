@@ -110,6 +110,14 @@ class BindingsQueries:
         )
         await self.session.execute(stmt)
 
+    async def remove_category(self, category_id: UUID4):
+        stmt = (
+            update(Binding)
+            .where(Binding.category_id == category_id)
+            .values(category_id=None)
+        )
+        await self.session.execute(stmt)
+
 
 def get_bindings_queries(
     db: Annotated[AsyncSession, Depends(get_db)],

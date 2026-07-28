@@ -1,3 +1,4 @@
+from database_handle.queries.bindings import BindingsQueries
 from typing import Annotated
 from uuid import uuid4
 
@@ -70,7 +71,11 @@ async def remove_category(
 ):
     async with db.begin() as session:
         queries = CategoriesQueries(session=session.session)
+        bindings_queries = BindingsQueries(session=session.session)
+
         entry = await queries.get_by_name(category_name)
         if entry is None:
             raise HTTPException(status_code=404, detail="Category not found")
+
         await queries.remove(category_name)
+        await bindings_queries.remove_category(entry.id)
