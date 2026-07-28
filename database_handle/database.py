@@ -1,6 +1,6 @@
 import contextlib
+import os
 from collections.abc import AsyncIterator
-from os import environ
 from typing import Any
 
 from sqlalchemy import create_engine
@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.decl_api import DeclarativeBase
 
-SQLALCHEMY_DATABASE_URL = environ.get("SQLALCHEMY_DATABASE_URL")
+SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
 
 if not SQLALCHEMY_DATABASE_URL:
     raise ValueError("SQLALCHEMY_DATABASE_URL is not set")
