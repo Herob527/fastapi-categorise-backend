@@ -7,7 +7,7 @@ from sqlalchemy import UUID, Column, Enum, String
 from ..database import Base
 
 
-class Visibility(enum.Enum):
+class Visibility(enum.IntEnum):
     PUBLIC = 1
     HIDDEN = 0
 
