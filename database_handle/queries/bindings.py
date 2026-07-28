@@ -5,7 +5,6 @@ from fastapi import Depends
 from pydantic.types import UUID4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import delete, update
 
 from database_handle.database import get_db
@@ -18,11 +17,6 @@ from database_handle.models.bindings import (
 from database_handle.models.categories import Category
 from database_handle.models.texts import Text
 from database_handle.utils.pagination import with_paginated
-
-BindingAlias = aliased(Binding, name="binding")
-CategoryAlias = aliased(Category, name="category")
-AudioAlias = aliased(Audio, name="audio")
-TextAlias = aliased(Text, name="text")
 
 
 @dataclass
@@ -37,21 +31,21 @@ class BindingsQueries:
         skip_empty: bool = False,
     ):
         stmt = (
-            select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
-            .outerjoin(CategoryAlias)
-            .join(AudioAlias)
-            .join(TextAlias)
-            .where(AudioAlias.audio_status != StatusEnum.waiting)
+            select(Binding, Category, Audio, Text)
+            .outerjoin(Category)
+            .join(Audio)
+            .join(Text)
+            .where(Audio.audio_status != StatusEnum.waiting)
         )
 
         if category_name:
-            stmt = stmt.where(CategoryAlias.name == category_name)
+            stmt = stmt.where(Category.name == category_name)
         if category_id:
-            stmt = stmt.where(CategoryAlias.id == category_id)
+            stmt = stmt.where(Category.id == category_id)
         if include_none and category_id is None:
-            stmt = stmt.where(CategoryAlias.id.is_(None))
+            stmt = stmt.where(Category.id.is_(None))
         if skip_empty:
-            stmt = stmt.where(func.trim(TextAlias.text) != "")
+            stmt = stmt.where(func.trim(Text.text) != "")
 
         result = (await self.session.execute(stmt)).all()
 
@@ -72,12 +66,12 @@ class BindingsQueries:
 
     async def get_paginated(self, page: int = 0, limit: int = 20):
         stmt = (
-            select(BindingAlias, CategoryAlias, AudioAlias, TextAlias)
-            .outerjoin(CategoryAlias)
-            .join(AudioAlias)
-            .join(TextAlias)
-            .where(AudioAlias.audio_status != StatusEnum.waiting)
-            .order_by(AudioAlias.file_name)
+            select(Binding, Category, Audio, Text)
+            .outerjoin(Category)
+            .join(Audio)
+            .join(Text)
+            .where(Audio.audio_status != StatusEnum.waiting)
+            .order_by(Audio.file_name)
         )
 
         def transform_row(row):
