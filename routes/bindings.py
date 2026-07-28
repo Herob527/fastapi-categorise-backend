@@ -1,4 +1,3 @@
-from database_handle.queries.audios import AudioQueries
 from typing import Annotated
 from uuid import uuid4
 
@@ -12,6 +11,7 @@ from database_handle.database import get_db
 from database_handle.models.audios import Audio, StatusEnum
 from database_handle.models.bindings import Binding, BindingModel, PaginatedBindingModel
 from database_handle.models.texts import Text
+from database_handle.queries.audios import AudioQueries
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
 from database_handle.queries.categories import CategoriesQueries, get_categories_queries
 from services.minio_service import minio_service
@@ -27,9 +27,9 @@ router = APIRouter(
 
 @router.get("", response_model=PaginatedBindingModel)
 async def get_paginated_bindings(
+    queries: Annotated[BindingsQueries, Depends(get_bindings_queries)],
     page: int = 0,
     per_page: int = 10,
-    queries: BindingsQueries = Depends(get_bindings_queries),
 ):
     if page < 0:
         raise HTTPException(
@@ -48,7 +48,7 @@ async def get_paginated_bindings(
 
 @router.get("/all", response_model=list[BindingModel])
 async def get_all_bindings(
-    queries: BindingsQueries = Depends(get_bindings_queries),
+    queries: Annotated[BindingsQueries, Depends(get_bindings_queries)],
     category: str | None = None,
 ):
     return await queries.get_all(category_name=category)
@@ -102,17 +102,17 @@ async def create_binding(
             )
     except HTTPException as e:
         print(e)
-        raise e
+        raise
     except Exception as e:
         print(e)
-        raise e
+        raise HTTPException(status_code=500, detail="Failed to create audio file")
     return CreateResponseModel(binding_id=binding_id)
 
 
 @router.delete("/{binding_id}")
 async def remove_binding(
     binding_id: UUID4,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     async with db.begin() as t:
         audio_record = await db.scalar(
@@ -137,7 +137,7 @@ async def remove_binding(
 async def binding_category_update(
     binding_id: UUID4,
     category_id: UUID4,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     async with db.begin() as session:
         queries = BindingsQueries(session=session.session)
@@ -147,7 +147,7 @@ async def binding_category_update(
 @router.put("/{binding_id}/remove_category")
 async def binding_category_remove(
     binding_id: UUID4,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     async with db.begin() as session:
         queries = BindingsQueries(session=session.session)

@@ -1,4 +1,3 @@
-from database_handle.models.categories import Visibility
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -9,7 +8,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 from database_handle.database import get_db
 from database_handle.models.audios import Audio
 from database_handle.models.bindings import Binding
-from database_handle.models.categories import Category
+from database_handle.models.categories import Category, Visibility
 from database_handle.models.texts import Text
 
 

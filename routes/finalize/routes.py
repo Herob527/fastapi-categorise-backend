@@ -48,7 +48,7 @@ router = APIRouter(
 @router.post("/generate_preview", response_model=DirectoryModel)
 async def generate_preview(
     config: FinaliseConfigModel,
-    queries: BindingsQueries = Depends(get_bindings_queries),
+    queries: Annotated[BindingsQueries, Depends(get_bindings_queries)],
 ):
     bindings = await queries.get_all(skip_empty=config.omit_empty)
     category_mapping: dict[str, CategoryData] = {}
@@ -271,9 +271,9 @@ async def schedule_finalise(
 
 @router.get("/status", response_model=Paginated[ExportModel])
 async def get_statuses(
+    queries: Annotated[ExportsQueries, Depends(get_exports_queries)],
     page: int = 0,
     limit: int = 20,
-    queries: ExportsQueries = Depends(get_exports_queries),
 ):
     return await queries.get_paginated(page, limit)
 
@@ -297,7 +297,7 @@ async def get_statuses(
 )
 async def download_finalized_zip(
     export_id: str,
-    queries: ExportsQueries = Depends(get_exports_queries),
+    queries: Annotated[ExportsQueries, Depends(get_exports_queries)],
 ):
     service = minio_service.minio_service
     archive_url = await queries.get_archive(export_id)
@@ -312,7 +312,7 @@ async def download_finalized_zip(
 @router.get("/delete-zip/{export_id}")
 async def delete_finalized_zip(
     export_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     service = minio_service.minio_service
     async with db.begin() as session:

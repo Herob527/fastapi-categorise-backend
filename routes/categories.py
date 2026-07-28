@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException
@@ -19,16 +20,16 @@ router = APIRouter(
 
 @router.get("", response_model=list[CategoryModel])
 async def get_all_categories(
-    queries: CategoriesQueries = Depends(get_categories_queries),
+    queries: Annotated[CategoriesQueries, Depends(get_categories_queries)],
 ):
     return await queries.get_all()
 
 
 @router.post("/")
 async def post_new_category(
+    db: Annotated[AsyncSession, Depends(get_db)],
     id: UUID4 | None = None,
     category: str = Form(),
-    db: AsyncSession = Depends(get_db),
 ) -> None:
     async with db.begin() as session:
         queries = CategoriesQueries(session=session.session)
@@ -50,8 +51,8 @@ async def post_new_category(
 @router.patch("/{id}")
 async def update_category(
     id: UUID4,
+    db: Annotated[AsyncSession, Depends(get_db)],
     new_category_name: str = Form(),
-    db: AsyncSession = Depends(get_db),
 ):
     async with db.begin() as session:
         queries = CategoriesQueries(session=session.session)
@@ -65,7 +66,7 @@ async def update_category(
 @router.delete("/{category_name}")
 async def remove_category(
     category_name: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     async with db.begin() as session:
         queries = CategoriesQueries(session=session.session)

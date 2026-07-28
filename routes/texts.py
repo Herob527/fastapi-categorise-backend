@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +20,7 @@ router = APIRouter(
 async def update_text(
     text_id: UUID4,
     new_text: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     async with db.begin() as session:
         queries = TextsQueries(session=session.session)

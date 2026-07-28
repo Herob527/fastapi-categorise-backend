@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Annotated
 
 import librosa
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -17,10 +18,10 @@ router = APIRouter(prefix="/audio", tags=["audio"])
 
 @router.post("/upload")
 async def upload_audio(
+    db: Annotated[AsyncSession, Depends(get_db)],
     file: UploadFile,
     uuid: UUID4,
     folder: str = "audio",
-    db: AsyncSession = Depends(get_db),
 ):
     """Upload audio file to MinIO and save metadata to database"""
     if file.content_type is None:
@@ -58,7 +59,7 @@ async def upload_audio(
 
 
 @router.get("/download/{audio_id}")
-async def download_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
+async def download_audio(audio_id: UUID4, db: Annotated[AsyncSession, Depends(get_db)]):
     """Download audio file by UUID"""
     audio_record = (
         await db.scalars(select(Audio).where(Audio.id == audio_id).limit(1))
@@ -86,7 +87,9 @@ async def download_url(audio_id: str):
 
 @router.get("/url/{audio_id}")
 async def get_audio_url(
-    audio_id: UUID4, expires: int = 3600, db: AsyncSession = Depends(get_db)
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audio_id: UUID4,
+    expires: int = 3600,
 ):
     """Get presigned URL for audio file access"""
     audio_record = await db.scalar(select(Audio).where(Audio.id == audio_id).limit(1))
@@ -101,7 +104,7 @@ async def get_audio_url(
 
 
 @router.delete("/{audio_id}")
-async def delete_audio(audio_id: UUID4, db: AsyncSession = Depends(get_db)):
+async def delete_audio(audio_id: UUID4, db: Annotated[AsyncSession, Depends(get_db)]):
     """Delete audio file from both MinIO and database"""
     audio_record = await db.scalar(select(Audio).where(Audio.id == audio_id).limit(1))
     if not audio_record:

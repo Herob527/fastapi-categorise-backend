@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from database_handle.models.dashboard import DashboardModel
@@ -13,7 +15,9 @@ router = APIRouter(
 
 
 @router.get("/", response_model=DashboardModel)
-async def get_dashboard(queries: DashboardQueries = Depends(get_dashboard_queries)):
+async def get_dashboard(
+    queries: Annotated[DashboardQueries, Depends(get_dashboard_queries)],
+):
     categories_count = await queries.get_categories_count()
     total_bindings_count = await queries.get_total_bindings_count()
     category_with_most_bindings = await queries.get_category_with_most_bindings()

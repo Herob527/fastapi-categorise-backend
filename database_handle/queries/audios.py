@@ -1,8 +1,8 @@
-from minio import select
 from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends
+from minio import select
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
