@@ -1,3 +1,4 @@
+from database_handle.models.categories import Visibility
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -31,7 +32,7 @@ class CategoriesQueries:
             await self.session.execute(
                 select(count_func)
                 .select_from(Category)
-                .where(Category.visibility == Category.visibility.PUBLIC)
+                .where(Category.visibility == Visibility.PUBLIC)
             )
         ).scalar() or 0
         return entry
@@ -41,7 +42,7 @@ class CategoriesQueries:
             await self.session.scalars(
                 select(Category)
                 .order_by(Category.id)
-                .where(Category.visibility == Category.visibility.PUBLIC)
+                .where(Category.visibility == Visibility.PUBLIC)
             )
         ).all()
 
@@ -53,7 +54,7 @@ class CategoriesQueries:
         stmt = (
             update(Category)
             .where(Category.id == entry.id)
-            .values(visibility=Category.visibility.HIDDEN)
+            .values(visibility=Visibility.HIDDEN)
         )
         await self.session.execute(stmt)
 
