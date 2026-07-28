@@ -1,3 +1,4 @@
+from database_handle.models.categories import Visibility
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -17,7 +18,11 @@ class DashboardQueries:
     session: AsyncSession
 
     async def get_categories_count(self):
-        result = await self.session.scalar(select(func.count(Category.id)))
+        result = await self.session.scalar(
+            select(
+                func.count(Category.id).where(Category.visibility == Visibility.PUBLIC)
+            )
+        )
         return result
 
     async def get_total_bindings_count(self):
@@ -32,6 +37,7 @@ class DashboardQueries:
             .join(Binding, Binding.category_id == Category.id)
             .group_by(Category.id, Category.name)
             .order_by(func.count(Binding.id).desc())
+            .where(Category.visibility == Visibility.PUBLIC)
             .limit(1)
         )
 
