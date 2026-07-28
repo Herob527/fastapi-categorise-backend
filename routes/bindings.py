@@ -1,3 +1,4 @@
+from database_handle.queries.audios import AudioQueries
 from typing import Annotated
 from uuid import uuid4
 
@@ -74,6 +75,9 @@ async def create_binding(
         async with db.begin() as session:
             bindings_queries = BindingsQueries(session=session.session)
             categories_queries = CategoriesQueries(session=session.session)
+            audios_queries = AudioQueries(session=session.session)
+            if audios_queries.exists(audio.filename):
+                raise HTTPException(status_code=409, detail="Audio file already exists")
 
             category_id = (
                 await categories_queries.get_or_create_by_name(category)
@@ -96,9 +100,12 @@ async def create_binding(
                     audio_status=StatusEnum.waiting,
                 )
             )
+    except HTTPException as e:
+        print(e)
+        raise e
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise e
     return CreateResponseModel(binding_id=binding_id)
 
 
