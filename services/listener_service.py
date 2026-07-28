@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator
 from enum import StrEnum
 
@@ -15,7 +16,10 @@ class ListenerService:
     pubsub: PubSub
 
     def __init__(self):
-        self.redis = Redis(host="redis", port=6379)
+        self.redis = Redis(
+            host=os.getenv("REDIS_HOST", "redis"),
+            port=int(os.getenv("REDIS_PORT", "6379")),
+        )
 
         self.pubsub = self.redis.pubsub()
 
