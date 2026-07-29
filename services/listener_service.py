@@ -30,6 +30,7 @@ class ListenerService:
         return self._pubsub.get_message()
 
     async def subscribe(self, channel: str):
+        # pyrefly: ignore [not-async] - in prod, it complains it wasn't awaited
         await self._pubsub.subscribe(channel)
 
         async def unsubscribe():
