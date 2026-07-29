@@ -12,32 +12,37 @@ class Channels(StrEnum):
 
 
 class ListenerService:
-    redis: Redis
-    pubsub: PubSub
+    _redis: Redis
+    _pubsub: PubSub
 
     def __init__(self):
-        self.redis = Redis(
+        self._redis = Redis(
             host=os.getenv("REDIS_HOST", "redis"),
             port=int(os.getenv("REDIS_PORT", "6379")),
         )
 
-        self.pubsub = self.redis.pubsub()
+        self._pubsub = self._redis.pubsub()
 
     def listen(self) -> AsyncGenerator:
-        return self.pubsub.listen()
+        return self._pubsub.listen()
 
     def get_messages(self):
-        return self.pubsub.get_message()
+        return self._pubsub.get_message()
 
-    def subscribe(self, channel: str):
-        return self.pubsub.subscribe(channel)
+    async def subscribe(self, channel: str):
+        await self._pubsub.subscribe(channel)
+
+        async def unsubscribe():
+            await self._pubsub.unsubscribe(channel)
+
+        return unsubscribe
 
     async def publish(self, channel: str, message: EncodableT):
-        return await self.redis.publish(channel, message)
+        return await self._redis.publish(channel, message)
 
     async def close(self):
-        self.pubsub.close()
-        await self.redis.close()
+        self._pubsub.close()
+        await self._redis.close()
 
 
 async def get_listener_service():
