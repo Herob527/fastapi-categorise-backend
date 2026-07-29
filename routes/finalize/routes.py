@@ -93,7 +93,8 @@ async def generate_preview(
             for binding in data["bindings"]:
                 dir = directory.get_or_create_dir(WavsDir.name)
                 dir.append(file=Path(binding.audio.file_name))
-            directory.append(file=TranscriptFile.as_path())
+            if config.export_transcript:
+                directory.append(file=TranscriptFile.as_path())
             files.append(directory)
     else:
         directory = DirectoryModel(
@@ -105,7 +106,8 @@ async def generate_preview(
         )
         for binding in bindings:
             directory.append(file=Path(binding.audio.file_name))
-        directory.append(file=TranscriptFile.as_path())
+        if config.export_transcript:
+            directory.append(file=TranscriptFile.as_path())
         files.append(directory)
 
     base_dir = DirectoryModel(
