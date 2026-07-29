@@ -46,8 +46,9 @@ def process_line(
         if indexed_categories
         else 0
     )
+    base_path = WavsDir.as_path() if config.divide_by_category else Path()
     formatted_line = config.line_format.format(
-        file=Path(WavsDir.as_path(), binding.audio.file_name),
+        file=Path(base_path, binding.audio.file_name),
         text=(
             binding.text.text
             if str(binding.text.text).strip() != ""
