@@ -1,3 +1,5 @@
+import time
+from sqlalchemy import func
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import uuid4
@@ -51,13 +53,19 @@ class ExportsQueries:
         self.session.add_all(entries)
 
     async def set_status(self, id: str, status: ExportStatus):
+        current_time = time.strftime("%Y-%B-%d %H:%M:%S%z", time.gmtime())
         await self.session.execute(
-            update(Exports).where(Exports.id == id).values(status=status)
+            update(Exports)
+            .where(Exports.id == id)
+            .values(status=status, updated_at=current_time)
         )
 
     async def set_archive_url(self, id: str, url: str):
+        current_time = time.strftime("%Y-%B-%d %H:%M:%S%z", time.gmtime())
         await self.session.execute(
-            update(Exports).where(Exports.id == id).values(archive_url=url)
+            update(Exports)
+            .where(Exports.id == id)
+            .values(archive_url=url, updated_at=current_time)
         )
 
     async def get_archive(self, id: str):
