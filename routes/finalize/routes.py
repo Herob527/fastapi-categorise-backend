@@ -327,10 +327,11 @@ async def stream_exports(
     listener_service: Annotated[ListenerService, Depends(get_listener_service)],
 ):
 
-    await listener_service.subscribe(Channels.EXPORTS.value)
+    unsub = await listener_service.subscribe(Channels.EXPORTS.value)
     async for message in listener_service.listen():
         if message["type"] == "message":
             yield ServerSentEvent(
                 data=message["data"],
                 event="item_update",
             )
+    await unsub()
