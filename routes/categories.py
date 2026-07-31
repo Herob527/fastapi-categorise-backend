@@ -1,4 +1,3 @@
-from database_handle.queries.bindings import BindingsQueries
 from typing import Annotated
 from uuid import uuid4
 
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database_handle.database import get_db
 from database_handle.models.categories import Category, CategoryModel
+from database_handle.queries.bindings import BindingsQueries
 from database_handle.queries.categories import CategoriesQueries, get_categories_queries
 
 __all__ = ["router"]
