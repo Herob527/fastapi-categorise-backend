@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.database import get_db
