@@ -320,8 +320,8 @@ async def delete_finalized_zip(
     async with db.begin() as session:
         queries = ExportsQueries(session=session.session)
         archive_url = await queries.get_archive(export_id)
-        await service.delete_file(archive_url)
         await queries.delete_export(export_id)
+        await service.delete_file(archive_url)
 
 
 @router.get("/exports/stream", response_class=EventSourceResponse)
