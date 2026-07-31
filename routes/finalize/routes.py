@@ -81,7 +81,7 @@ async def generate_preview(
     files: list[FileModel | DirectoryModel] = []
 
     if config.divide_by_category:
-        for category_id, data in category_mapping.items():
+        for data in category_mapping.values():
             processed_name = data["original_name"].replace(" ", "_")
             directory = DirectoryModel(
                 dir_name=processed_name,
