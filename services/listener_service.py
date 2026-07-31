@@ -1,5 +1,6 @@
 import os
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from enum import StrEnum
 
 from redis.asyncio import Redis
@@ -29,14 +30,11 @@ class ListenerService:
     def get_messages(self):
         return self._pubsub.get_message()
 
+    @asynccontextmanager
     async def subscribe(self, channel: str):
-        # pyrefly: ignore [not-async] - in prod, it complains it wasn't awaited
-        await self._pubsub.subscribe(channel)
-
-        async def unsubscribe():
-            await self._pubsub.unsubscribe(channel)
-
-        return unsubscribe
+        await self._pubsub.subscribe(channel)  # ty: ignore[invalid-await]
+        yield
+        self._pubsub.unsubscribe(channel)
 
     async def publish(self, channel: str, message: EncodableT):
         return await self._redis.publish(channel, message)
