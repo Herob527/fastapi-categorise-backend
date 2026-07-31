@@ -46,7 +46,7 @@ def process_line(
         if indexed_categories
         else 0
     )
-    base_path = WavsDir.as_path() if config.divide_by_category else Path()
+    base_path = WavsDir if config.divide_by_category else Path()
     formatted_line = config.line_format.format(
         file=Path(base_path, binding.audio.file_name),
         text=(
@@ -89,7 +89,7 @@ def process_transcript(
             else Path(OUTPUT_DIR)
         )
 
-        output_file = TranscriptFile.as_path(target_dir)
+        output_file = Path(target_dir, TranscriptFile)
         current_category = (
             str(binding.category.name)
             if binding.category is not None
@@ -133,7 +133,7 @@ def get_paths(bindings: list[BindingModel], config: FinaliseConfigModel):
                 WavsDir.name,
             )
         else:
-            subdir = WavsDir.as_path(subdir)
+            subdir = Path(subdir, WavsDir)
 
         yield (b.audio.url, Path(subdir, b.audio.file_name))
 

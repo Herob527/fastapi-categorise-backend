@@ -94,7 +94,7 @@ async def generate_preview(
                 dir = directory.get_or_create_dir(WavsDir.name)
                 dir.append(file=Path(binding.audio.file_name))
             if config.export_transcript:
-                directory.append(file=TranscriptFile.as_path())
+                directory.append(file=TranscriptFile)
             files.append(directory)
     else:
         directory = DirectoryModel(
@@ -107,7 +107,7 @@ async def generate_preview(
         for binding in bindings:
             directory.append(file=Path(binding.audio.file_name))
         if config.export_transcript:
-            directory.append(file=TranscriptFile.as_path())
+            directory.append(file=TranscriptFile)
         files.append(directory)
 
     base_dir = DirectoryModel(
@@ -174,7 +174,7 @@ async def schedule_task(
 
                             if config.export_transcript:
                                 zf.writestr(
-                                    TranscriptFile.as_string(category_name),
+                                    str(Path(category_name, TranscriptFile)),
                                     "\n".join(text_lines),
                                 )
                     else:
