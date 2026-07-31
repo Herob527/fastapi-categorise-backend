@@ -13,7 +13,7 @@ from database_handle.models.bindings import Binding, BindingModel, PaginatedBind
 from database_handle.models.texts import Text
 from database_handle.queries.audios import AudioQueries
 from database_handle.queries.bindings import BindingsQueries, get_bindings_queries
-from database_handle.queries.categories import CategoriesQueries, get_categories_queries
+from database_handle.queries.categories import CategoriesQueries
 from services.minio_service import minio_service
 
 __all__ = ["router"]
@@ -61,8 +61,6 @@ class CreateResponseModel(BaseModel):
 @router.post("", response_model=CreateResponseModel)
 async def create_binding(
     audio: Annotated[UploadFile, File()],
-    bindings_queries: Annotated[BindingsQueries, Depends(get_bindings_queries)],
-    categories_queries: Annotated[CategoriesQueries, Depends(get_categories_queries)],
     db: Annotated[AsyncSession, Depends(get_db)],
     category: str | None = None,
 ):
