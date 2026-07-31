@@ -116,7 +116,7 @@ async def delete_audio(audio_id: UUID4, db: Annotated[AsyncSession, Depends(get_
 
     if success:
         async with db.begin() as session:
-            await session.delete(audio_record)
+            await session.session.delete(audio_record)
         return {"message": "Audio file deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete audio file")
