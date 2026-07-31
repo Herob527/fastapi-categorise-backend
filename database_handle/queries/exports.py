@@ -1,12 +1,11 @@
-import time
-from sqlalchemy import func
+import datetime
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from database_handle.database import get_db
@@ -53,19 +52,23 @@ class ExportsQueries:
         self.session.add_all(entries)
 
     async def set_status(self, id: str, status: ExportStatus):
-        current_time = time.strftime("%Y-%B-%d %H:%M:%S%z", time.gmtime())
         await self.session.execute(
             update(Exports)
             .where(Exports.id == id)
-            .values(status=status, updated_at=current_time)
+            .values(
+                status=status,
+                updated_at=datetime.datetime.now(datetime.UTC),
+            )
         )
 
     async def set_archive_url(self, id: str, url: str):
-        current_time = time.strftime("%Y-%B-%d %H:%M:%S%z", time.gmtime())
         await self.session.execute(
             update(Exports)
             .where(Exports.id == id)
-            .values(archive_url=url, updated_at=current_time)
+            .values(
+                archive_url=url,
+                updated_at=datetime.datetime.now(datetime.UTC),
+            )
         )
 
     async def get_archive(self, id: str):
