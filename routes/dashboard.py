@@ -14,6 +14,7 @@ router = APIRouter(
 )
 
 
+# TODO: Do something about large amount of awaits
 @router.get("/", response_model=DashboardModel)
 async def get_dashboard(
     queries: Annotated[DashboardQueries, Depends(get_dashboard_queries)],
