@@ -240,10 +240,10 @@ async def schedule_task(
             exports_queries = ExportsQueries(session=bg_session)
             await exports_queries.set_status(id, ExportStatus.FAILED)
             await bg_session.commit()
-    await listener_service.publish(
-        Channels.EXPORTS.value,
-        ExportStatusMessage(id=id, status=ExportStatus.FAILED.value).to_json(),
-    )
+        await listener_service.publish(
+            Channels.EXPORTS.value,
+            ExportStatusMessage(id=id, status=ExportStatus.FAILED.value).to_json(),
+        )
 
 
 @router.post("/schedule", response_model=None)
